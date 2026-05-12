@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ubpump</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon: #ff2a18;
+      --neon-soft: #ff3a26;
+      --bg: #000;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: var(--bg);
+      overflow: hidden;
+      font-family: 'Share Tech Mono', 'VT323', ui-monospace, Menlo, Consolas, monospace;
+      cursor: default;
+    }
+
+    /* subtle CRT scanlines + vignette */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.03) 0px,
+          rgba(255, 255, 255, 0.03) 1px,
+          transparent 1px,
+          transparent 3px
+        );
+      mix-blend-mode: overlay;
+      z-index: 2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.85) 100%);
+      z-index: 3;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 8vw;
+      z-index: 1;
+    }
+
+    .lines {
+      max-width: 900px;
+      color: var(--neon);
+      font-size: clamp(18px, 2.1vw, 28px);
+      line-height: 2.2;
+      letter-spacing: 1px;
+      text-shadow:
+        0 0 4px rgba(255, 60, 40, 0.9),
+        0 0 10px rgba(255, 50, 30, 0.7),
+        0 0 22px rgba(255, 40, 20, 0.5),
+        0 0 40px rgba(255, 30, 10, 0.35);
+      animation: flicker 3.2s infinite;
+    }
+
+    .lines p {
+      margin: 0 0 1.4em 0;
+    }
+
+    .lines p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* per-line subtle offset flicker to feel like neon */
+    .lines p:nth-child(1) { animation: lineflicker1 5.3s infinite; }
+    .lines p:nth-child(2) { animation: lineflicker2 7.1s infinite; }
+    .lines p:nth-child(3) { animation: lineflicker3 6.4s infinite; }
+
+    @keyframes flicker {
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        opacity: 1;
+        text-shadow:
+          0 0 4px rgba(255, 60, 40, 0.9),
+          0 0 10px rgba(255, 50, 30, 0.7),
+          0 0 22px rgba(255, 40, 20, 0.5),
+          0 0 40px rgba(255, 30, 10, 0.35);
+      }
+      20%, 22%, 24%, 55% {
+        opacity: 0.55;
+        text-shadow: none;
+      }
+    }
+
+    @keyframes lineflicker1 {
+      0%, 97%, 100% { opacity: 1; }
+      97.5% { opacity: 0.3; }
+      98% { opacity: 1; }
+      98.5% { opacity: 0.4; }
+      99% { opacity: 1; }
+    }
+    @keyframes lineflicker2 {
+      0%, 92%, 100% { opacity: 1; }
+      92.5% { opacity: 0.35; }
+      93% { opacity: 1; }
+      93.5% { opacity: 0.5; }
+      94% { opacity: 1; }
+    }
+    @keyframes lineflicker3 {
+      0%, 88%, 100% { opacity: 1; }
+      88.4% { opacity: 0.25; }
+      88.8% { opacity: 1; }
+      89.2% { opacity: 0.55; }
+      89.6% { opacity: 1; }
+    }
+
+    /* CA box bottom right */
+    .ca {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      background: #111;
+      border: 1px solid #1f1f1f;
+      border-radius: 4px;
+      padding: 10px 14px;
+      color: #c9c9c9;
+      font-family: 'Share Tech Mono', ui-monospace, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+      cursor: pointer;
+      user-select: none;
+      z-index: 5;
+      transition: transform 0.12s ease, border-color 0.2s ease;
+    }
+    .ca:hover { border-color: #2a2a2a; }
+    .ca:active { transform: translateY(1px); }
+
+    .ca .label {
+      color: #b0b0b0;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+    .ca .addr {
+      color: #ffffff;
+      letter-spacing: 0.5px;
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ca .ticker {
+      color: #cfcfcf;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 96px;
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #2a2a2a;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 6;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <div class="lines">
+      <p>Keep spreading the fake news<br/>until $1B market cap.</p>
+      <p>Elon's new dog is the most awaited token by degens.</p>
+      <p>You could see 100M MC in a few minutes, if you buy and shill<br/>it like it's real.</p>
+    </div>
+  </main>
+
+  <div class="ca" id="ca" title="Click to copy contract address">
+    <div class="label">CA &mdash; tap to copy</div>
+    <div class="addr" id="addr">eCDCWWQtg4jhkBPhJYMCbmKWFVvuBjH8n7DQrJaPN5B</div>
+    <div class="ticker">ubpump</div>
+  </div>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script>
+    const ca = document.getElementById('ca');
+    const toast = document.getElementById('toast');
+    const addrEl = document.getElementById('addr');
+
+    ca.addEventListener('click', async () => {
+      const text = addrEl.textContent.trim();
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      toast.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toast.classList.remove('show'), 1200);
+    });
+  </script>
+</body>
+</html>

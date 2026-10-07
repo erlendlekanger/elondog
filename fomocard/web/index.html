@@ -26,30 +26,27 @@
     </div>
   </section>
 
-  <!-- the WebGL stage sits behind the next two sections -->
-  <canvas id="stage" aria-hidden="true"></canvas>
-
-  <!-- 2. earth -->
+  <!-- 2. earth: pinned while the card section slides over it -->
   <section class="earth">
-    <div class="sticky">
-      <div class="earth-header">
-        <h2>Infrastructure<br>for how you spend</h2>
-        <p>At home, abroad and everywhere in between.<br>Your wallet pays the shop directly.</p>
-        <a class="btn btn-light" href="https://spend.family">Get access</a>
-      </div>
-      <ul class="earth-points">
-        <li style="--x:22%;--y:70%">Uber Eats · New York</li>
-        <li style="--x:62%;--y:64%">Wolt · Oslo</li>
-        <li style="--x:78%;--y:78%">Nike · London</li>
-        <li style="--x:38%;--y:84%">Netflix · Berlin</li>
-      </ul>
+    <canvas id="earth-canvas" aria-hidden="true"></canvas>
+    <div class="earth-header">
+      <h2>Infrastructure<br>for how you spend</h2>
+      <p>At home, abroad and everywhere in between.<br>Your wallet pays the shop directly.</p>
+      <a class="btn btn-light" href="https://spend.family">Get access</a>
     </div>
+    <ul class="earth-points">
+      <li style="--x:22%;--y:70%">Uber Eats · New York</li>
+      <li style="--x:62%;--y:64%">Wolt · Oslo</li>
+      <li style="--x:78%;--y:78%">Nike · London</li>
+      <li style="--x:38%;--y:84%">Netflix · Berlin</li>
+    </ul>
   </section>
 
-  <!-- 3. spinning card inside the tube of images -->
-  <section class="tube">
-    <div class="sticky">
-      <div class="tube-copy">
+  <!-- 3. the card, circled by the shops it pays at -->
+  <section class="card">
+    <div class="card-sticky">
+      <canvas id="card-canvas" aria-hidden="true"></canvas>
+      <div class="card-header">
         <h2>The card is only<br>the beginning</h2>
         <a class="btn btn-light" href="https://spend.family">Get access</a>
       </div>

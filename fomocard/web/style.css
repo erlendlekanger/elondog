@@ -31,25 +31,26 @@ p { color: var(--muted); font-size: 15px; line-height: 1.45; }
 .hero-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,8,8,0) 55%, rgba(8,8,8,.85) 100%); }
 .hero-copy { position: absolute; left: 0; right: 0; bottom: 9vh; text-align: center; display: grid; gap: 22px; justify-items: center; }
 
-/* stage */
-#stage { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: 0; opacity: 0; pointer-events: none; }
-.earth, .tube { position: relative; z-index: 1; }
-.earth { height: 200vh; }
-.tube { height: 240vh; }
-.sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
-
+/* earth: pinned by ScrollTrigger for 2.5 screens without spacing */
+.earth { position: relative; height: 100vh; margin-top: 15vh; overflow: hidden; z-index: 1; }
+#earth-canvas, #card-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .earth-header { position: absolute; top: 15vh; left: 0; right: 0; text-align: center; display: grid; gap: 18px; justify-items: center; padding: 0 16px; }
 .earth-points { list-style: none; }
 .earth-points li { position: absolute; left: var(--x); top: var(--y); font-size: 12px; color: #d8dce4; padding: 6px 10px; border-radius: 999px; background: rgba(20,20,24,.55); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); white-space: nowrap; }
 .earth-points li::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #fff; margin-right: 8px; vertical-align: 1px; box-shadow: 0 0 10px #fff; }
 
-.tube-copy { position: absolute; left: 0; right: 0; bottom: 10vh; text-align: center; display: grid; gap: 22px; justify-items: center; opacity: 0; padding: 0 16px; }
+/* card: a black 2.5-screen panel that slides over the pinned earth */
+.card { position: relative; z-index: 2; height: 250vh; background: var(--bg); }
+.card-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+.card-header { position: absolute; left: 0; right: 0; bottom: 5vh; text-align: center; display: grid; gap: 22px; justify-items: center; padding: 0 16px; }
+
+.card-header h2 { font-size: clamp(28px, 3.6vw, 56px); }
 
 /* close */
-.close { position: relative; z-index: 2; background: var(--paper); color: #0a0a0a; min-height: 90vh; display: grid; align-content: center; justify-items: center; gap: 22px; text-align: center; padding: 18vh 16px; }
+.close { position: relative; z-index: 3; background: var(--paper); color: #0a0a0a; min-height: 90vh; display: grid; align-content: center; justify-items: center; gap: 22px; text-align: center; padding: 18vh 16px; }
 .close p { color: #555; }
 
-.foot { position: relative; z-index: 2; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 28px; font-size: 12px; color: var(--muted); background: var(--bg); }
+.foot { position: relative; z-index: 3; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 28px; font-size: 12px; color: var(--muted); background: var(--bg); }
 
 @media (max-width: 640px) {
   .nav { padding: 14px 16px; }

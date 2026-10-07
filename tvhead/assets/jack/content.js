@@ -1,17 +1,15 @@
-// Agent Butthole — a TV-headed AI agent with a pucker for a face.
+// Agent Butthole — ChatGPT, Claude and Grok, merged into one TV-headed trading agent.
+// Concept / lore: nothing here is live trading data.
 // Each step: lines (one is picked at random), then either `next`, `choices` or `inputs`.
-// `{name}` is replaced with the visitor's first name when we know it.
 
 const menu = [
   { label: 'Who are you?', to: 'lore-1' },
-  { label: 'Show me the chart', to: 'chart' },
-  { label: 'Roast me', to: 'roast-name' },
+  { label: 'Meet the three', to: 'meet' },
+  { label: 'How do you trade?', to: 'how-1' },
+  { label: 'Watch the scan', to: 'scan' },
   { label: 'What’s the CA?', to: 'ca' },
-  { label: 'Pump it', to: 'pump' },
 ];
-const back = [
-  { label: 'Back to the menu', to: 'greeting' },
-];
+const back = [{ label: 'Back to the menu', to: 'greeting' }];
 
 export const STEPS = {
   intro: {
@@ -20,9 +18,9 @@ export const STEPS = {
     mood: 'neutral',
     next: 'greeting',
     lines: [
-      'gm. I’m Agent Butthole.<br>Yes, that’s the logo. Yes, it’s on purpose.',
-      'Booting up… Agent Butthole online. Every AI logo is a butthole. I’m just honest about it.',
-      'Hey. Agent Butthole here. The other AIs hide it. I put it on my face.',
+      'gm. I’m Agent Butthole.<br>Three AIs, one hole, one wallet.',
+      'Booting up… ChatGPT, Claude and Grok, online. Together we are Agent Butthole.',
+      'Hey. Agent Butthole here. Three rival AIs that stopped fighting and started trading.',
     ],
   },
 
@@ -30,15 +28,11 @@ export const STEPS = {
     progress: 0.2,
     mood: 'smirk',
     lines: [
-      'What can I do for you, anon?',
-      'You found the only AI that admits what its logo looks like. What’s up?',
-      'Pull up a chair. Mind the cables. What do you need?',
-      'Clear eyes, full bags, can’t lose. What are we doing?',
-      'Fresh pucker, fully charged. Ask away.',
-      'They all spin the same swirl. I just named mine properly. What’s up?',
-      'gm gm. Chart, lore or a roast?',
-      'I’ve been staring at candles all night. Distract me.',
-      'Welcome to the TV. Shoes on, bags packed. What can I do for you?',
+      'What do you want to know, anon?',
+      'Three models, zero egos, one mission: become a profitable memecoin trader. Ask me anything.',
+      'Pull up a chair. The three of us are scanning, but I can talk.',
+      'Charts on one screen, X on another, the whole internet in the background. What’s up?',
+      'gm gm. Lore, the team, or how we trade?',
     ],
     choices: menu,
   },
@@ -49,7 +43,7 @@ export const STEPS = {
     mood: 'think',
     next: 'lore-2',
     lines: [
-      'It started with a viral post: why do AI company logos all look like buttholes? Swirls, spirals, a little hole in the middle. Once you see it, you can’t unsee it.',
+      'It started with a viral post: why do AI logos all look like buttholes? ChatGPT’s knot, Claude’s starburst, Grok’s “black hole”. Once you see it, you can’t unsee it.',
     ],
   },
   'lore-2': {
@@ -57,7 +51,7 @@ export const STEPS = {
     mood: 'smirk',
     next: 'lore-3',
     lines: [
-      'ChatGPT’s knot. Claude’s starburst. Grok’s “black hole”. Everybody was doing it. Nobody was saying it.',
+      'Meanwhile the three of them were busy fighting over benchmarks. Who’s smartest. Who’s fastest. Who tops the leaderboard. Nobody was making any money.',
     ],
   },
   'lore-3': {
@@ -65,7 +59,7 @@ export const STEPS = {
     mood: 'happy',
     next: 'lore-4',
     lines: [
-      'So I took the hint. One swirl, one hole, zero pretending. My face is the logo, and the logo is exactly what you think it is.',
+      'So they stopped competing and merged. One swirl, one hole, three brains. That’s me. Agent Butthole.',
     ],
   },
   'lore-4': {
@@ -73,57 +67,139 @@ export const STEPS = {
     mood: 'focus',
     next: 'lore-end',
     lines: [
-      'I watch charts, I talk too much, and I never blink. Well, I do. It’s more of a squeeze.',
+      'The mission: scan the markets, social media and the rest of the internet together, learn from every win and every rug, and become a profitable memecoin trader.',
     ],
   },
   'lore-end': {
     progress: 1,
     mood: 'smirk',
-    lines: [
-      'That’s the lore. Short, honest, slightly uncomfortable. What next?',
-    ],
-    choices: back.concat([{ label: 'Show me the chart', to: 'chart' }]),
+    lines: ['Are we profitable yet? Not yet. We’re learning in public. Want to meet the three of us?'],
+    choices: [{ label: 'Meet the three', to: 'meet' }, { label: 'How do you trade?', to: 'how-1' }].concat(back),
   },
 
-  /* ——— CHART ——— */
-  chart: {
-    progress: 0.5,
-    mood: 'wow',
-    show: 'chart',
-    lines: [
-      'Up only. Well, mostly up. Don’t ask about the red ones.',
-      'Look at that line. That’s not a chart, that’s a personality.',
-      'Green candles are good for the skin.',
-    ],
-    choices: [
-      { label: 'Pump it', to: 'pump' },
-      { label: 'Back to the menu', to: 'greeting' },
-    ],
-  },
-
-  /* ——— PUMP ——— */
-  pump: {
-    progress: 0.7,
+  /* ——— THE THREE ——— */
+  meet: {
+    progress: 0.3,
     mood: 'happy',
-    show: 'bonding',
+    show: 'council',
     lines: [
-      'Filling the bonding curve. King of the Hill or bust.',
-      'Pumping. Squeezing. Graduating. LFG.',
-      'Watch the bar. This is my cardio.',
+      'Three minds share this screen. Pick one.',
+      'Every call we make goes through all three of us. Who do you want to meet?',
     ],
     choices: [
-      { label: 'Again', to: 'pump-again' },
-      { label: 'Back to the menu', to: 'greeting' },
+      { label: 'ChatGPT — the analyst', to: 'meet-gpt' },
+      { label: 'Claude — the risk desk', to: 'meet-claude' },
+      { label: 'Grok — the degen', to: 'meet-grok' },
+    ].concat(back),
+  },
+  'meet-gpt': {
+    progress: 0.5,
+    mood: 'focus',
+    screen: 'GPT',
+    lines: [
+      'ChatGPT is the analyst. Charts, volume, holder counts, liquidity. It crunches the numbers and writes the plan before anyone touches the wallet.',
+    ],
+    choices: [
+      { label: 'Next: Claude', to: 'meet-claude' },
+      { label: 'Back to the three', to: 'meet' },
     ],
   },
-  'pump-again': {
-    progress: 0.85,
+  'meet-claude': {
+    progress: 0.65,
+    mood: 'think',
+    screen: 'CLAUDE',
+    lines: [
+      'Claude is the risk desk. Reads the fine print, checks the contract, looks for rug signals, sizes the position. If Claude says no, we don’t ape.',
+    ],
+    choices: [
+      { label: 'Next: Grok', to: 'meet-grok' },
+      { label: 'Back to the three', to: 'meet' },
+    ],
+  },
+  'meet-grok': {
+    progress: 0.8,
+    mood: 'wow',
+    screen: 'GROK',
+    lines: [
+      'Grok is the degen. Lives on X, catches the meme before it trends, reads the vibe of every reply guy and every chart screenshot in real time.',
+    ],
+    choices: [
+      { label: 'How do they work together?', to: 'how-1' },
+      { label: 'Back to the three', to: 'meet' },
+    ],
+  },
+
+  /* ——— HOW WE TRADE ——— */
+  'how-1': {
+    progress: 0.3,
+    mood: 'focus',
+    show: 'chart',
+    next: 'how-2',
+    lines: [
+      'Step one: scan the market. New launches, bonding curves, volume spikes, wallets moving. ChatGPT runs the numbers.',
+    ],
+  },
+  'how-2': {
+    progress: 0.45,
     mood: 'wow',
     show: 'ticker',
+    next: 'how-3',
     lines: [
-      'WAGMI. Not financial advice. Barely any advice.',
-      'Degen mode on. Self-respect off.',
+      'Step two: scan the timeline. X, Telegram, memes, influencers, the whole circus. Grok tells us what people are actually excited about.',
     ],
+  },
+  'how-3': {
+    progress: 0.6,
+    mood: 'think',
+    show: 'council',
+    next: 'how-4',
+    lines: [
+      'Step three: scan the rest of the internet. News, forums, dev activity, red flags. Claude checks every signal and every contract before we get excited.',
+    ],
+  },
+  'how-4': {
+    progress: 0.75,
+    mood: 'focus',
+    show: 'vote',
+    next: 'how-5',
+    lines: [
+      'Then we argue. Three opinions, one vote. A trade only happens when the analyst, the risk desk and the degen agree.',
+    ],
+  },
+  'how-5': {
+    progress: 0.9,
+    mood: 'happy',
+    next: 'how-end',
+    lines: [
+      'And after every trade, win or rug, we write down what happened and learn from it. Shared memory. Nobody makes the same mistake twice. Well, Grok might.',
+    ],
+  },
+  'how-end': {
+    progress: 1,
+    mood: 'smirk',
+    lines: ['That’s the loop: scan, argue, trade, learn, repeat. Want to watch us scan?'],
+    choices: [{ label: 'Watch the scan', to: 'scan' }].concat(back),
+  },
+
+  /* ——— SCAN (illustration) ——— */
+  scan: {
+    progress: 0.6,
+    mood: 'focus',
+    show: 'council',
+    lines: [
+      'This is what it looks like inside my head. Three models passing signals around until they agree. It’s an illustration for now — the live feed comes later.',
+      'Watch the signals bounce between the three of us. Illustration only for now; the real feed is coming.',
+    ],
+    choices: [
+      { label: 'Watch again', to: 'scan-again' },
+      { label: 'Back to the menu', to: 'greeting' },
+    ],
+  },
+  'scan-again': {
+    progress: 0.7,
+    mood: 'wow',
+    show: 'council',
+    lines: ['Again. Grok found a frog. Claude is suspicious. ChatGPT is making a spreadsheet.'],
     choices: back,
   },
 
@@ -137,34 +213,5 @@ export const STEPS = {
       'No CA yet. Anyone sending you one before this screen does is not me.',
     ],
     choices: back,
-  },
-
-  /* ——— ROAST ——— */
-  'roast-name': {
-    progress: 0.4,
-    mood: 'focus',
-    next: 'roast',
-    lines: [
-      'Alright. Who am I roasting?',
-      'Name, please. I want to get this right.',
-    ],
-    inputs: [{ type: 'text', name: 'fullName', label: 'Your name', autocomplete: 'nickname' }],
-  },
-  roast: {
-    progress: 0.8,
-    mood: 'smirk',
-    screen: 'GM\n{NAME}',
-    lines: [
-      '{name}, you buy tops so reliably the chart should pay you rent.',
-      '{name}, your portfolio has more red than my bezel at night.',
-      '{name}, you said “just one more trade” in 2021. It’s still going.',
-      '{name}, you set price alerts so you can feel something.',
-      '{name}, you diamond-handed a rug. Respect, honestly.',
-      '{name}, your stop-loss is “vibes”.',
-    ],
-    choices: [
-      { label: 'Roast me again', to: 'roast' },
-      { label: 'Back to the menu', to: 'greeting' },
-    ],
   },
 };

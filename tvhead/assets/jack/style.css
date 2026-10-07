@@ -709,6 +709,21 @@ textarea.c-field_input {
   transform: translate(-50%, 0);
 }
 
+/* ——— Disclaimer ——— */
+.c-disclaimer {
+  position: fixed;
+  z-index: 11;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* ——— Note (brief helper) ——— */
 .c-note {
   position: fixed;
@@ -850,6 +865,15 @@ html.is-ready .c-loader {
 
   .c-header_status {
     display: none;
+  }
+
+  .c-disclaimer {
+    bottom: auto;
+    top: 46px;
+    font-size: 10px;
+    white-space: normal;
+    width: calc(100% - 32px);
+    text-align: center;
   }
 
   .c-stage {

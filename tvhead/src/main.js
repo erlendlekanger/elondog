@@ -1,0 +1,547 @@
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import gsap from 'gsap';
+import { buildCharacter } from './character.js';
+
+// ---------------------------------------------------------------------------
+// CONFIG: change these to make the site yours.
+// ---------------------------------------------------------------------------
+const CONFIG = {
+  name: 'TV/HEAD',
+  accent: '#ff3a22',
+  // Path to your own rigged model, e.g. 'models/me.glb'. Leave null to use the
+  // built-in TV-head character. See README.md for how to make one.
+  modelUrl: null,
+  // Bone names searched for in your model (case and symbols are ignored).
+  bones: {
+    torso: ['torso', 'spine2', 'mixamorigspine2', 'chest', 'spine1'],
+    neck1: ['neck1', 'neck', 'mixamorigneck'],
+    neck2: ['neck2', 'head', 'mixamorighead'],
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Renderer, scene, camera
+// ---------------------------------------------------------------------------
+const stage = document.getElementById('stage');
+const canvas = document.createElement('canvas');
+const gl = canvas.getContext('webgl2', { antialias: false, powerPreference: 'high-performance' });
+if (!gl) {
+  document.querySelector('[data-loader]').remove();
+  const p = document.createElement('p');
+  p.className = 'fallback';
+  p.textContent = 'Nettleseren din støtter ikke WebGL 2.';
+  document.body.append(p);
+  throw new Error('WebGL2 unavailable');
+}
+stage.append(canvas);
+
+const renderer = new THREE.WebGLRenderer({ canvas, context: gl });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x060608);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.32;
+
+const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 60);
+const cameraBase = new THREE.Vector3(0, 0.95, 7.8);
+const cameraTarget = new THREE.Vector3(0, 0.72, 0);
+
+// Backdrop: soft radial glow behind the head, fading to black.
+const accent = new THREE.Color(CONFIG.accent);
+const backdrop = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 24),
+  new THREE.ShaderMaterial({
+    depthWrite: false,
+    uniforms: { uColor: { value: accent.clone() }, uTime: { value: 0 } },
+    vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
+    fragmentShader: /* glsl */ `
+      varying vec2 vUv; uniform vec3 uColor; uniform float uTime;
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+      void main(){
+        vec2 p = (vUv - vec2(0.5, 0.56)) * vec2(40.0, 24.0) / 9.0;
+        float g = exp(-dot(p, p) * 0.9);
+        vec3 col = vec3(0.012, 0.012, 0.016) + uColor * 0.07 * g + vec3(0.02) * g;
+        col += (hash(vUv * 900.0 + uTime) - 0.5) * 0.006;
+        gl_FragColor = vec4(col, 1.0);
+      }`,
+  }),
+);
+backdrop.position.z = -5;
+scene.add(backdrop);
+
+// ---------------------------------------------------------------------------
+// Lights: warm key with soft shadows, two coloured rims, light from the screen.
+// ---------------------------------------------------------------------------
+const key = new THREE.DirectionalLight(0xfff1e0, 2.4);
+key.position.set(-3.2, 4.5, 5);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -3;
+key.shadow.camera.right = 3;
+key.shadow.camera.top = 4;
+key.shadow.camera.bottom = -3;
+key.shadow.bias = -0.0004;
+key.shadow.normalBias = 0.02;
+key.shadow.radius = 6;
+scene.add(key);
+
+const fill = new THREE.DirectionalLight(0xb9c6ff, 0.35);
+fill.position.set(4, 1, 4);
+scene.add(fill);
+
+const rimL = new THREE.SpotLight(accent, 60, 14, 0.5, 0.8, 1.6);
+rimL.position.set(-4, 3.5, -3.5);
+rimL.target.position.set(0, 0.8, 0);
+scene.add(rimL, rimL.target);
+
+const rimR = new THREE.SpotLight(0x9fb8ff, 45, 14, 0.5, 0.8, 1.6);
+rimR.position.set(4.2, 2.8, -3.2);
+rimR.target.position.set(0, 0.8, 0);
+scene.add(rimR, rimR.target);
+
+const screenLight = new THREE.PointLight(accent, 1.6, 3.2, 1.8);
+scene.add(screenLight);
+
+// ---------------------------------------------------------------------------
+// Character
+// ---------------------------------------------------------------------------
+const character = buildCharacter(CONFIG.accent);
+character.root.position.y = -0.55;
+scene.add(character.root);
+
+let rig = character.rig;
+const screenMat = character.screenMaterial;
+const U = screenMat.uniforms;
+
+// Rest pose is captured so motion is always added on top of it (works for any rig).
+function captureRest(r) {
+  const rest = {};
+  for (const k of Object.keys(r)) rest[k] = r[k].rotation.clone();
+  return rest;
+}
+let rest = captureRest(rig);
+
+// Optional: swap in a rigged .glb.
+async function loadCustomModel(url) {
+  const loader = new GLTFLoader();
+  const draco = new DRACOLoader();
+  draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/');
+  loader.setDRACOLoader(draco);
+  const gltf = await loader.loadAsync(url);
+  const model = gltf.scene;
+  const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const find = (names) => {
+    let hit = null;
+    model.traverse((o) => { if (!hit && names.includes(norm(o.name))) hit = o; });
+    return hit;
+  };
+  const torso = find(CONFIG.bones.torso);
+  const neck1 = find(CONFIG.bones.neck1);
+  const neck2 = find(CONFIG.bones.neck2) || neck1;
+  if (!torso || !neck1) {
+    console.warn('[tvhead] Fant ikke bein med navnene i CONFIG.bones – bruker innebygd figur.');
+    return;
+  }
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    o.castShadow = o.receiveShadow = true;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    if (mats.some((mm) => mm && mm.name === 'Screen')) o.material = screenMat;
+  });
+  character.root.visible = false;
+  scene.add(model);
+  rig = { torso, neck1, neck2, head: neck2 };
+  rest = captureRest(rig);
+  customModel = model;
+}
+let customModel = null;
+
+// ---------------------------------------------------------------------------
+// Post-processing
+// ---------------------------------------------------------------------------
+const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
+const composer = new EffectComposer(renderer, rt);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.55, 0.55, 0.92);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+const finish = new ShaderPass({
+  uniforms: {
+    tDiffuse: { value: null },
+    uTime: { value: 0 },
+    uRes: { value: new THREE.Vector2(1, 1) },
+    uGlitch: { value: 0 },
+  },
+  vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse; uniform float uTime; uniform vec2 uRes; uniform float uGlitch;
+    varying vec2 vUv;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+    void main(){
+      vec2 d = vUv - 0.5;
+      float r2 = dot(d, d);
+      vec2 off = d * (0.006 + uGlitch * 0.02) * r2 * 4.0;
+      vec3 col;
+      col.r = texture2D(tDiffuse, vUv + off).r;
+      col.g = texture2D(tDiffuse, vUv).g;
+      col.b = texture2D(tDiffuse, vUv - off).b;
+      col *= 1.0 - r2 * 1.1;
+      col += (hash(vUv * uRes + fract(uTime) * 100.0) - 0.5) * 0.045;
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+});
+composer.addPass(finish);
+
+// ---------------------------------------------------------------------------
+// Input
+// ---------------------------------------------------------------------------
+const mouse = new THREE.Vector2();       // raw target, -1..1
+const fast = new THREE.Vector2();        // eyes
+const mid = new THREE.Vector2();         // head
+const slow = new THREE.Vector2();        // body & camera
+const cursorEl = document.querySelector('[data-cursor]');
+let lastMove = -10;
+let elapsed = 0;
+
+function setPointer(x, y) {
+  mouse.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+  lastMove = elapsed;
+}
+
+window.addEventListener('pointermove', (e) => {
+  setPointer(e.clientX, e.clientY);
+  cursorEl.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+});
+
+// Phones: tilt to look around.
+function onOrientation(e) {
+  if (e.gamma == null) return;
+  mouse.set(THREE.MathUtils.clamp(e.gamma / 25, -1, 1), THREE.MathUtils.clamp((45 - e.beta) / 25, -1, 1));
+  lastMove = elapsed;
+}
+window.addEventListener('deviceorientation', onOrientation);
+window.addEventListener('touchstart', () => {
+  const D = window.DeviceOrientationEvent;
+  if (D && typeof D.requestPermission === 'function') D.requestPermission().catch(() => {});
+}, { once: true });
+
+// ---------------------------------------------------------------------------
+// Expressions & gestures
+// ---------------------------------------------------------------------------
+const additive = { neck2X: 0, neck2Z: 0, neck1Y: 0, torsoX: 0, headY: 0 };
+
+function nodYes() {
+  const tl = gsap.timeline();
+  const a = 0.09;
+  tl.to(additive, { neck2X: a, duration: 0.18, ease: 'power1.inOut' })
+    .to(additive, { neck2X: -a * 0.6, duration: 0.2, ease: 'power1.inOut' })
+    .to(additive, { neck2X: a * 0.7, duration: 0.2, ease: 'power1.inOut' })
+    .to(additive, { neck2X: 0, duration: 0.35, ease: 'power2.out' });
+  return tl;
+}
+
+function shakeNo() {
+  const tl = gsap.timeline();
+  const a = 0.16;
+  tl.to(additive, { neck1Y: -a, duration: 0.16, ease: 'power1.inOut' })
+    .to(additive, { neck1Y: a, duration: 0.22, ease: 'power1.inOut' })
+    .to(additive, { neck1Y: -a * 0.6, duration: 0.2, ease: 'power1.inOut' })
+    .to(additive, { neck1Y: 0, duration: 0.35, ease: 'power2.out' });
+  return tl;
+}
+
+function bump() {
+  gsap.timeline()
+    .to(additive, { torsoX: -0.05, headY: 0.06, duration: 0.12, ease: 'power2.out' })
+    .to(additive, { torsoX: 0, headY: 0, duration: 0.9, ease: 'elastic.out(1, 0.35)' });
+}
+
+function glitch(strength = 1, dur = 0.45) {
+  gsap.timeline()
+    .to(U.uGlitch, { value: strength, duration: 0.05 })
+    .to(finish.uniforms.uGlitch, { value: strength * 0.6, duration: 0.05 }, 0)
+    .to(U.uGlitch, { value: 0, duration: dur, ease: 'power2.in' })
+    .to(finish.uniforms.uGlitch, { value: 0, duration: dur, ease: 'power2.in' }, '<');
+}
+
+function expression(name, hold = 2.2) {
+  const target = { happy: 0, surprise: 0 };
+  if (name === 'happy') target.happy = 1;
+  if (name === 'surprise') target.surprise = 1;
+  gsap.to(U.uHappy, { value: target.happy, duration: 0.25, ease: 'power2.out' });
+  gsap.to(U.uSurprise, { value: target.surprise, duration: 0.2, ease: 'power2.out' });
+  if (name !== 'neutral') {
+    gsap.delayedCall(hold, () => {
+      gsap.to(U.uHappy, { value: 0, duration: 0.4 });
+      gsap.to(U.uSurprise, { value: 0, duration: 0.4 });
+    });
+  }
+}
+
+function channelSwitch() {
+  gsap.timeline()
+    .to(U.uStatic, { value: 1, duration: 0.06 })
+    .to(U.uStatic, { value: 0, duration: 0.5, ease: 'power3.in', delay: 0.25 });
+  glitch(1, 0.7);
+  gsap.fromTo(U.uPower, { value: 6 }, { value: 3.2, duration: 0.8, ease: 'power2.out' });
+}
+
+let blinkTimer = 2;
+function blink() {
+  const tl = gsap.timeline();
+  tl.to(U.uBlink, { value: 1, duration: 0.06, ease: 'power2.in' }).to(U.uBlink, { value: 0, duration: 0.12, ease: 'power2.out' });
+  if (Math.random() < 0.2) tl.to(U.uBlink, { value: 1, duration: 0.06 }).to(U.uBlink, { value: 0, duration: 0.12 });
+}
+
+// Click the TV to poke it.
+const raycaster = new THREE.Raycaster();
+function hitsTV(x, y) {
+  const p = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+  raycaster.setFromCamera(p, camera);
+  const target = customModel || character.tv;
+  return raycaster.intersectObject(target, true).length > 0;
+}
+
+window.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('button, a')) return;
+  if (hitsTV(e.clientX, e.clientY)) {
+    expression('surprise', 1.2);
+    glitch(0.8);
+    bump();
+    gsap.delayedCall(1.3, () => { expression('happy', 1.6); nodYes(); });
+  }
+});
+
+window.addEventListener('pointermove', (e) => {
+  const over = e.target.closest('button, a') || hitsTV(e.clientX, e.clientY);
+  cursorEl.classList.toggle('big', !!over);
+}, { passive: true });
+
+// ---------------------------------------------------------------------------
+// Chat
+// ---------------------------------------------------------------------------
+const msgEl = document.querySelector('[data-msg]');
+const choicesEl = document.querySelector('[data-choices]');
+let typing = null;
+let talking = false;
+
+const SCRIPT = {
+  start: {
+    text: 'Hei. Jeg er TV/HEAD. Beveg musen, så følger jeg med.',
+    choices: [['Hvem er du?', 'who'], ['Gjør noe kult', 'cool'], ['Bytt kanal', 'channel']],
+  },
+  who: {
+    text: 'En 3D-figur laget med Three.js. Hodet mitt er en gammel CRT-TV, og ansiktet er tegnet i en shader.',
+    do: () => nodYes(),
+    choices: [['Hvordan følger du musen?', 'how'], ['Gjør noe kult', 'cool']],
+  },
+  how: {
+    text: 'Musen glattes ut i tre farter: øynene raskest, så hodet, så kroppen. Det gjør at jeg virker levende.',
+    do: () => expression('happy'),
+    choices: [['Bytt kanal', 'channel'], ['Tilbake', 'start']],
+  },
+  cool: {
+    text: 'Se på dette.',
+    do: () => { channelSwitch(); gsap.delayedCall(0.8, () => { expression('happy', 2.5); nodYes(); bump(); }); },
+    choices: [['Igjen!', 'cool'], ['Nei takk', 'no']],
+  },
+  channel: {
+    text: 'Kanal 03. Ingen signal… bare tuller.',
+    do: () => { channelSwitch(); gsap.delayedCall(0.9, () => expression('surprise', 1.2)); },
+    choices: [['Hvem er du?', 'who'], ['Tilbake', 'start']],
+  },
+  no: {
+    text: 'Greit, greit. Jeg står her og ser på deg likevel.',
+    do: () => { shakeNo(); expression('neutral'); },
+    choices: [['Unnskyld', 'start']],
+  },
+};
+
+function say(id) {
+  const node = SCRIPT[id];
+  choicesEl.innerHTML = '';
+  if (typing) typing.kill();
+  node.do?.();
+  const state = { n: 0 };
+  talking = true;
+  typing = gsap.to(state, {
+    n: node.text.length,
+    duration: node.text.length * 0.028,
+    ease: 'none',
+    onUpdate: () => {
+      msgEl.innerHTML = '';
+      msgEl.append(node.text.slice(0, Math.round(state.n)));
+      const caret = document.createElement('span');
+      caret.className = 'caret';
+      msgEl.append(caret);
+    },
+    onComplete: () => {
+      talking = false;
+      node.choices.forEach(([label, next], i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        b.addEventListener('click', () => say(next));
+        choicesEl.append(b);
+        setTimeout(() => b.classList.add('in'), 80 * i + 30);
+      });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Resize
+// ---------------------------------------------------------------------------
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  bloom.setSize(w, h);
+  finish.uniforms.uRes.value.set(w, h);
+  camera.aspect = w / h;
+  // Pull back on tall screens so the whole head fits.
+  cameraBase.z = w / h < 0.8 ? 12 : w / h < 1.2 ? 9.5 : 7.8;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ---------------------------------------------------------------------------
+// Animation loop
+// ---------------------------------------------------------------------------
+const damp = (cur, target, lambda, dt) => cur + (target - cur) * (1 - Math.exp(-lambda * dt));
+const range = (v, a, b) => THREE.MathUtils.lerp(a, b, THREE.MathUtils.smoothstep(v, -1, 1));
+const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3();
+const antennaState = character.antennas.map(() => ({ x: 0, v: 0 }));
+let prevHeadY = 0;
+const clock = new THREE.Clock();
+
+function updateCables(lag) {
+  for (const c of character.cables) {
+    c.startObj.getWorldPosition(tmpA);
+    c.endObj.getWorldPosition(tmpB);
+    character.root.worldToLocal(tmpA);
+    character.root.worldToLocal(tmpB);
+    const c1 = tmpA.clone().add(tmpC.set(c.out * 0.1 + lag.x * 0.25, -0.28 + lag.y * 0.05, 0.03));
+    const c2 = tmpB.clone().add(tmpC.set(c.out * 0.12 + lag.x * 0.15, 0.3, 0.02));
+    const curve = new THREE.CubicBezierCurve3(tmpA, c1, c2, tmpB);
+    c.mesh.geometry.dispose();
+    c.mesh.geometry = new THREE.TubeGeometry(curve, 48, c.r, 10, false);
+  }
+}
+
+function tick() {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  elapsed += dt;
+  const t = elapsed;
+
+  // Idle: wander gaze when the pointer has been still for a while.
+  const target = mouse.clone();
+  const idle = THREE.MathUtils.smoothstep(t - lastMove, 4, 6);
+  if (idle > 0) {
+    const wander = new THREE.Vector2(Math.sin(t * 0.31) * 0.6 + Math.sin(t * 0.83) * 0.2, Math.sin(t * 0.47) * 0.3);
+    target.lerp(wander, idle);
+  }
+
+  fast.x = damp(fast.x, target.x, 9, dt);  fast.y = damp(fast.y, target.y, 9, dt);
+  mid.x = damp(mid.x, target.x, 2.6, dt);  mid.y = damp(mid.y, target.y, 2.6, dt);
+  slow.x = damp(slow.x, target.x, 1.1, dt); slow.y = damp(slow.y, target.y, 1.1, dt);
+
+  const { torso, neck1, neck2 } = rig;
+
+  // Body follows a little, slowly.
+  torso.rotation.y = rest.torso.y + range(slow.x, -0.12, 0.12);
+  torso.rotation.x = rest.torso.x + range(slow.y, 0.045, -0.045) + additive.torsoX + Math.sin(t * 1.3) * 0.006;
+  torso.rotation.z = rest.torso.z + range(slow.x, 0.012, -0.012);
+
+  // Head leads.
+  neck1.rotation.y = rest.neck1.y + range(mid.x, -0.42, 0.42) + additive.neck1Y;
+  neck1.rotation.x = rest.neck1.x + range(mid.y, 0.16, -0.2);
+  neck1.rotation.z = rest.neck1.z + range(mid.x, 0.07, -0.07);
+
+  // Upper neck: idle sway + gestures.
+  neck2.rotation.x = rest.neck2.x + Math.sin(t * 0.51) * 0.035 + additive.neck2X;
+  neck2.rotation.z = rest.neck2.z + Math.sin(t * 0.23) * 0.03;
+  neck2.rotation.y = rest.neck2.y;
+
+  // Breathing.
+  if (!customModel) {
+    character.root.position.y = -0.55 + Math.sin(t * 1.3) * 0.008;
+    character.rig.head.position.y = 0.18 + additive.headY;
+  }
+
+  // Antennas: damped springs driven by head velocity.
+  const headVel = (neck1.rotation.y - prevHeadY) / Math.max(dt, 1e-4);
+  prevHeadY = neck1.rotation.y;
+  character.antennas.forEach((a, i) => {
+    const s = antennaState[i];
+    s.v += (-55 * s.x - 5 * s.v - headVel * 0.9) * dt;
+    s.x += s.v * dt;
+    a.arm.rotation.z = a.baseZ + s.x * 0.4 + Math.sin(t * 1.7 + i) * 0.01;
+    a.arm.rotation.x = a.baseX + s.x * 0.2;
+  });
+
+  // Screen face.
+  U.uTime.value = t;
+  U.uLook.value.set(fast.x, fast.y);
+  U.uTalk.value = talking ? 0.35 + 0.35 * Math.sin(t * 22) * Math.sin(t * 7.3) : damp(U.uTalk.value, 0, 12, dt);
+  blinkTimer -= dt;
+  if (blinkTimer <= 0) { blink(); blinkTimer = 2 + Math.random() * 3.5; }
+
+  // Cables swing from the difference between fast and slow motion.
+  if (!customModel) updateCables(tmpC.set(fast.x - slow.x, fast.y - slow.y, 0).clone());
+
+  // Screen light follows the TV and flickers with the picture.
+  character.screenLightAnchor.getWorldPosition(screenLight.position);
+  screenLight.intensity = (1.3 + Math.sin(t * 50) * 0.05 + U.uStatic.value * 1.5) * (U.uPower.value / 3.2);
+
+  // Camera parallax.
+  camera.position.set(cameraBase.x + slow.x * 0.35, cameraBase.y + slow.y * 0.2, cameraBase.z);
+  camera.lookAt(cameraTarget);
+
+  backdrop.material.uniforms.uTime.value = t;
+  finish.uniforms.uTime.value = t;
+  composer.render();
+  requestAnimationFrame(tick);
+}
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+// ?debug exposes internals for automated screenshots.
+if (new URLSearchParams(location.search).has('debug')) window.__tvhead = { gsap, U, mouse };
+
+document.title = CONFIG.name;
+document.querySelector('[data-brand]').textContent = CONFIG.name;
+document.documentElement.style.setProperty('--accent', CONFIG.accent);
+
+(async () => {
+  if (CONFIG.modelUrl) {
+    try { await loadCustomModel(CONFIG.modelUrl); } catch (err) { console.warn('[tvhead] Kunne ikke laste modell:', err); }
+  }
+  await document.fonts?.ready;
+  tick();
+  const loader = document.querySelector('[data-loader]');
+  gsap.to(loader, { opacity: 0, duration: 0.8, delay: 0.3, onComplete: () => loader.remove() });
+  U.uPower.value = 0;
+  gsap.timeline({ delay: 0.5 })
+    .to(U.uStatic, { value: 1, duration: 0.05 })
+    .to(U.uPower, { value: 3.2, duration: 0.6, ease: 'power2.out' })
+    .to(U.uStatic, { value: 0, duration: 0.6, ease: 'power3.in' }, '<0.2')
+    .add(() => { nodYes(); say('start'); }, '+=0.2');
+})();

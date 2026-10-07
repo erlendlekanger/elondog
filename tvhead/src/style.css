@@ -1,0 +1,207 @@
+:root {
+  --bg: #060608;
+  --fg: #ece8df;
+  --muted: #8d8a83;
+  --accent: #ff3a22;
+  --line: rgba(236, 232, 223, 0.14);
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  --sans: 'Space Grotesk', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body { cursor: none; }
+@media (hover: none) { body { cursor: auto; } .cursor { display: none; } }
+
+#stage, #stage canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.top {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.brand {
+  pointer-events: auto;
+  color: var(--fg);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 18px;
+}
+
+.status {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse { 50% { opacity: 0.35; } }
+
+.chat {
+  position: fixed;
+  left: 32px;
+  bottom: 40px;
+  width: min(380px, calc(100vw - 32px));
+  z-index: 5;
+}
+
+.chat__label {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+.chat__msg {
+  margin: 0 0 18px;
+  min-height: 3.2em;
+  font-size: clamp(18px, 1.6vw, 22px);
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.chat__msg .caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+  background: var(--accent);
+  animation: pulse 0.8s steps(1) infinite;
+}
+
+.chat__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat__choices button {
+  font: 500 13px var(--mono);
+  color: var(--fg);
+  background: rgba(10, 10, 12, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 16px;
+  cursor: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.25s, background 0.25s, transform 0.25s;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.chat__choices button.in { opacity: 1; transform: none; }
+.chat__choices button:hover { border-color: var(--accent); background: rgba(255, 58, 34, 0.12); }
+@media (hover: none) { .chat__choices button { cursor: pointer; } }
+
+.hint {
+  position: fixed;
+  right: 32px;
+  bottom: 40px;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  z-index: 5;
+  transition: opacity 0.6s;
+}
+
+.loader {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  z-index: 20;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.loader__dots { animation: pulse 1s steps(1) infinite; }
+
+.cursor {
+  position: fixed;
+  top: 0; left: 0;
+  width: 10px; height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--fg);
+  mix-blend-mode: difference;
+  pointer-events: none;
+  z-index: 30;
+  transition: width 0.25s, height 0.25s, margin 0.25s;
+}
+
+.cursor.big { width: 38px; height: 38px; margin: -19px 0 0 -19px; }
+
+.nojs, .fallback {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  font-family: var(--mono);
+}
+
+@media (max-width: 700px) {
+  .top { padding: 18px 16px; }
+  .chat { left: 16px; bottom: 24px; }
+  .hint { display: none; }
+}
+
+/* Keep chat text readable over the body on small screens. */
+@media (max-width: 700px) {
+  .chat::before {
+    content: "";
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    height: 46vh;
+    background: linear-gradient(to top, rgba(6, 6, 8, 0.92), rgba(6, 6, 8, 0));
+    z-index: -1;
+    pointer-events: none;
+  }
+}

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>TV/HEAD</title>
+  <meta name="description" content="Interaktiv 3D-figur med TV-hode som følger musen." />
+  <meta name="theme-color" content="#060608" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+      "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="stage" aria-hidden="true"></div>
+
+  <header class="top">
+    <a class="brand" href="/" data-brand>TV/HEAD</a>
+    <span class="status"><i class="dot"></i><span data-status>online</span></span>
+  </header>
+
+  <section class="chat" aria-live="polite">
+    <p class="chat__label">// tv/head</p>
+    <p class="chat__msg" data-msg></p>
+    <div class="chat__choices" data-choices></div>
+  </section>
+
+  <p class="hint" data-hint>beveg musen · klikk på TV-en</p>
+
+  <div class="loader" data-loader>
+    <span class="loader__text">tuning in<span class="loader__dots">...</span></span>
+  </div>
+
+  <div class="cursor" data-cursor></div>
+
+  <noscript><p class="nojs">Denne siden trenger JavaScript.</p></noscript>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

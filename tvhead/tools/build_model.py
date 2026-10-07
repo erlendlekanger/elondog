@@ -24,9 +24,13 @@ OUT = os.path.join(HERE, '..', 'models', 'tvhead.glb')
 BRAND = os.environ.get('TVHEAD_BRAND', 'TV/HEAD')
 ACCENT = (1.0, 0.04, 0.016)  # linear RGB of #ff3a22
 AO_SAMPLES = int(os.environ.get('TVHEAD_AO_SAMPLES', '48'))
+# Skin tone as an sRGB hex colour, e.g. TVHEAD_SKIN="#8d5a3b".
+_skin_hex = os.environ.get('TVHEAD_SKIN', '#c99a80').lstrip('#')
+SKIN = tuple(((c / 255) / 12.92) if c / 255 <= 0.04045 else (((c / 255 + 0.055) / 1.055) ** 2.4) for c in (int(_skin_hex[i:i + 2], 16) for i in (0, 2, 4)))
 
 # Layout (Blender: x right, y back, z up; the character faces -y).
-NECK1_Z, NECK2_Z, HEAD_Z = 0.4, 0.7, 0.88
+NECK1_Z, NECK2_Z, HEAD_Z = 0.48, 0.84, 1.12
+COLLAR_TOP = 0.47
 TV_W, TV_D, TV_H = 1.66, 0.62, 1.24
 TV_Z = HEAD_Z + TV_H / 2 + 0.06
 SCREEN_W, SCREEN_H, SCREEN_X = 1.02, 0.8, -0.2
@@ -293,7 +297,7 @@ def build_sweater(mats):
 
 def build_collar(mats):
     bm = bmesh.new()
-    segs, rows, h = 144, 10, 0.34
+    segs, rows, h = 144, 10, COLLAR_TOP - 0.25
     grid = []
     for j in range(rows + 1):
         t = j / rows
@@ -318,7 +322,7 @@ def build_collar(mats):
     # Rolled edge at the top of the collar.
     bm = bmesh.new()
     R, r, nu, nv = 0.315, 0.035, 144, 16
-    ring = [[bm.verts.new(((R + r * math.cos(b)) * math.cos(a), (R + r * math.cos(b)) * math.sin(a) * 0.82, 0.59 + r * math.sin(b)))
+    ring = [[bm.verts.new(((R + r * math.cos(b)) * math.cos(a), (R + r * math.cos(b)) * math.sin(a) * 0.82, COLLAR_TOP + r * math.sin(b)))
              for b in (2 * math.pi * j / nv for j in range(nv))] for a in (2 * math.pi * i / nu for i in range(nu))]
     for i in range(nu):
         for j in range(nv):
@@ -330,19 +334,202 @@ def build_collar(mats):
     return assign(obj, mats['collar'])
 
 
-def build_neck(mats):
-    objs = {'neck1': [], 'neck2': []}
-    core = cylinder('NeckCore', 0.1, 0.1, HEAD_Z - NECK1_Z + 0.06, 32)
-    core.location.z = (NECK1_Z + HEAD_Z) / 2
-    objs['neck1'].append(smooth(assign(core, mats['rubber']), 40))
-    rings = [(NECK1_Z + 0.05, 'neck1'), (NECK1_Z + 0.15, 'neck1'), (NECK1_Z + 0.25, 'neck1'),
-             (NECK2_Z + 0.045, 'neck2'), (NECK2_Z + 0.135, 'neck2')]
-    for i, (z, bone) in enumerate(rings):
-        ring = cylinder(f'NeckRing{i}', 0.155, 0.155, 0.045, 48)
-        ring.location.z = z
-        ring = bevel(ring, 0.01, 3)
-        objs[bone].append(smooth(assign(ring, mats['brushed'] if i % 2 else mats['dark']), 40))
-    return objs
+
+# ---------------------------------------------------------------------------
+# human neck
+# ---------------------------------------------------------------------------
+def _ss(e0, e1, x):
+    t = min(max((x - e0) / (e1 - e0), 0.0), 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def _angdiff(a, b):
+    return (a - b + math.pi) % (2 * math.pi) - math.pi
+
+
+NECK_BOTTOM = 0.28
+NECK_TOP = HEAD_Z + 0.07           # hidden inside the gasket under the TV
+NECK_SPAN = (HEAD_Z + 0.06) - COLLAR_TOP   # visible part, collar to TV
+
+
+def neck_radius(theta, z):
+    """Radius of the neck surface at angle theta (front = -90deg) and height z.
+    u runs 0..1 over the visible neck, from the collar to the TV."""
+    u = (z - COLLAR_TOP) / NECK_SPAN
+    uc = min(max(u, 0), 1)
+    base = 0.25 - 0.015 * uc - 0.012 * math.sin(math.pi * uc)
+    r = base / math.sqrt(math.cos(theta) ** 2 + (math.sin(theta) / 0.9) ** 2)
+    env = _ss(-0.15, 0.1, u) * (1 - _ss(0.85, 1.0, u))
+    k = _ss(0.0, 0.95, u)
+    for s in (1, -1):
+        bottom = math.radians(-74 if s > 0 else -106)
+        top = math.radians(15 if s > 0 else 165)
+        phi = bottom + _angdiff(top, bottom) * k
+        d = _angdiff(theta, phi) * base
+        r += 0.022 * math.exp(-(d / 0.055) ** 2) * env          # sternocleidomastoid
+    d = _angdiff(theta, -math.pi / 2) * base
+    r += 0.02 * math.exp(-(d / 0.045) ** 2 - ((u - 0.45) / 0.09) ** 2)   # adam's apple
+    r -= 0.016 * math.exp(-(d / 0.06) ** 2 - ((u - 0.02) / 0.07) ** 2)  # sternal notch
+    r += 0.006 * math.exp(-(d / 0.07) ** 2) * env                       # trachea
+    db = _angdiff(theta, math.pi / 2) * base
+    r -= 0.01 * math.exp(-(db / 0.12) ** 2)                              # flatter back
+    return r
+
+
+def neck_point(theta, z, out=0.0):
+    r = neck_radius(theta, z) + out
+    return Vector((r * math.cos(theta), r * math.sin(theta), z))
+
+
+def _fft_noise(s, scale, rng):
+    n = rng.standard_normal((s, s))
+    fx = np.fft.fftfreq(s)[:, None]
+    fy = np.fft.fftfreq(s)[None, :]
+    f = np.exp(-(fx ** 2 + fy ** 2) * (s / scale) ** 2)
+    out = np.real(np.fft.ifft2(np.fft.fft2(n) * f))
+    return (out - out.min()) / (out.max() - out.min())
+
+
+def skin_maps(tone):
+    s = 512
+    rng = np.random.default_rng(7)
+    pores = np.zeros((s, s))
+    idx = rng.integers(0, s, size=(5200, 2))
+    pores[idx[:, 0], idx[:, 1]] = rng.uniform(0.6, 1.0, 5200)
+    fx = np.fft.fftfreq(s)[:, None]
+    fy = np.fft.fftfreq(s)[None, :]
+    blur = np.exp(-(fx ** 2 + fy ** 2) * (s / 2.2) ** 2 * 6)
+    pores = np.real(np.fft.ifft2(np.fft.fft2(pores) * blur))
+    pores /= pores.max()
+    fine = _fft_noise(s, 90, rng)
+    creases = _fft_noise(s, 18, rng)
+    hgt = 1 - pores * 0.8 + fine * 0.25 + np.abs(np.sin(np.linspace(0, 40 * np.pi, s)))[:, None] * 0.04 * creases
+    normal = np_image('skin_normal', normal_from_height(hgt, 3.0))
+    blotch = _fft_noise(s, 10, rng)
+    redness = _fft_noise(s, 24, rng)
+    col = np.array(tone)[None, None, :] * (0.94 + 0.12 * blotch[..., None])
+    col[..., 0] *= 1 + 0.06 * redness
+    col *= 1 - pores[..., None] * 0.08
+    color = np_image('skin_color', np.clip(col, 0, 1))
+    return color, normal
+
+
+def build_human_neck(mats):
+    segs, rows = 144, 110
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new('UVMap')
+    grid = []
+    for j in range(rows + 1):
+        z = NECK_BOTTOM + (NECK_TOP - NECK_BOTTOM) * j / rows
+        grid.append([bm.verts.new(neck_point(2 * math.pi * i / segs - math.pi, z)) for i in range(segs)])
+    for j in range(rows):
+        for i in range(segs):
+            i2 = (i + 1) % segs
+            f = bm.faces.new((grid[j][i], grid[j][i2], grid[j + 1][i2], grid[j + 1][i]))
+            for l, (ii, jj) in zip(f.loops, ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1))):
+                l[uv].uv = (ii / segs * 5, (NECK_BOTTOM + (NECK_TOP - NECK_BOTTOM) * jj / rows) * 5)
+    obj = mesh_obj('Neck', bm)
+    return smooth(assign(obj, mats['skin']))
+
+
+def skin_neck(obj, rig):
+    groups = {n: obj.vertex_groups.new(name=n) for n in ('torso', 'neck1', 'neck2', 'head')}
+    for v in obj.data.vertices:
+        z = v.co.z
+        a = _ss(NECK1_Z - 0.04, NECK1_Z + 0.08, z)
+        b = _ss(NECK2_Z - 0.1, NECK2_Z + 0.06, z)
+        c = _ss(HEAD_Z - 0.02, HEAD_Z + 0.05, z)
+        for name, w in (('torso', 1 - a), ('neck1', a * (1 - b)), ('neck2', a * b * (1 - c)), ('head', a * b * c)):
+            if w > 1e-4:
+                groups[name].add([v.index], w, 'REPLACE')
+    mod = obj.modifiers.new('Armature', 'ARMATURE')
+    mod.object = rig
+    mw = obj.matrix_world.copy()
+    obj.parent = rig
+    obj.matrix_world = mw
+
+
+def torus(name, R, r, nu=96, nv=16, squash=1.0):
+    bm = bmesh.new()
+    ring = [[bm.verts.new(((R + r * math.cos(b)) * math.cos(a), (R + r * math.cos(b)) * math.sin(a) * squash, r * math.sin(b)))
+             for b in (2 * math.pi * j / nv for j in range(nv))] for a in (2 * math.pi * i / nu for i in range(nu))]
+    for i in range(nu):
+        for j in range(nv):
+            bm.faces.new((ring[i][j], ring[(i + 1) % nu][j], ring[(i + 1) % nu][(j + 1) % nv], ring[i][(j + 1) % nv]))
+    return smooth(mesh_obj(name, bm))
+
+
+def build_gasket(mats):
+    """Rubber bellows where the neck disappears into the TV."""
+    parts = []
+    tv_bottom = TV_Z - TV_H / 2
+    for k, (z, R) in enumerate(((tv_bottom - 0.012, 0.262), (tv_bottom - 0.05, 0.252), (tv_bottom - 0.085, 0.244))):
+        t = torus(f'Gasket{k}', R, 0.024, 128, 16, 0.9)
+        t.location.z = z
+        parts.append(assign(t, mats['rubber']))
+    plate = cylinder('GasketPlate', 0.3, 0.3, 0.025, 96)
+    plate.scale.y = 0.9
+    plate.location.z = tv_bottom - 0.004
+    parts.append(smooth(assign(bevel(plate, 0.008, 2), mats['dark']), 40))
+    return parts
+
+
+CABLES = [
+    # tv x, tv y, neck angle (deg), height on visible neck (0..1), radius, kind, slack
+    (0.44, -0.06, -22, 0.35, 0.030, 'black', 1.18),
+    (0.32, 0.16, 28, 0.20, 0.022, 'grey', 1.25),
+    (-0.44, -0.04, 202, 0.30, 0.032, 'black', 1.16),
+    (-0.26, 0.18, 150, 0.55, 0.016, 'accent', 1.3),
+    (0.08, 0.22, 95, 0.25, 0.026, 'black', 1.18),
+    (-0.13, -0.2, -112, 0.72, 0.010, 'accent', 1.4),
+    (0.14, -0.2, -66, 0.76, 0.010, 'grey', 1.45),
+]
+
+
+def empty(name, loc, **extras):
+    e = link(bpy.data.objects.new(name, None))
+    e.location = loc
+    for k, v in extras.items():
+        e[k] = v
+    return e
+
+
+def build_cable_ports(mats):
+    """Plugs under the TV and sockets in the neck. The cables themselves are
+    simulated on the website between the empties c{i}_a (TV) and c{i}_b (neck)."""
+    head_parts, neck_parts = [], []
+    tv_bottom = TV_Z - TV_H / 2
+    for i, (tx, ty, ang, nu, rad, kind, slack) in enumerate(CABLES):
+        nz = COLLAR_TOP + nu * NECK_SPAN
+        # TV side: chrome ferrule + rubber boot pointing down.
+        fr = cylinder(f'Plug{i}', rad * 1.35, rad * 1.35, 0.04, 32)
+        fr.location = (tx, ty, tv_bottom - 0.02)
+        head_parts.append(smooth(assign(bevel(fr, 0.004, 2), mats['chrome']), 40))
+        boot = cylinder(f'PlugBoot{i}', rad * 1.2, rad * 1.05, 0.05, 32)
+        boot.location = (tx, ty, tv_bottom - 0.065)
+        head_parts.append(smooth(assign(boot, mats['rubber']), 40))
+        tip = Vector((tx, ty, tv_bottom - 0.09))
+        head_parts.append(empty(f'c{i}_a', tip, radius=rad, kind=kind, slack=slack))
+        head_parts.append(empty(f'c{i}_a2', tip + Vector((0, 0, -0.07))))
+
+        # Neck side: socket ring sunk into the skin + boot along the surface normal.
+        th = math.radians(ang)
+        p = neck_point(th, nz)
+        n = (neck_point(th, nz, 0.01) - p).normalized()
+        rot = n.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+        ring = torus(f'Socket{i}', rad * 1.5, rad * 0.35 + 0.004, 32, 10)
+        ring.matrix_world = Matrix.Translation(p + n * 0.002) @ rot
+        disc = cylinder(f'SocketHole{i}', rad * 1.4, rad * 1.4, 0.01, 32)
+        disc.matrix_world = Matrix.Translation(p - n * 0.002) @ rot
+        sboot = cylinder(f'SocketBoot{i}', rad * 1.05, rad * 1.2, 0.045, 32)
+        sboot.matrix_world = Matrix.Translation(p + n * 0.024) @ rot
+        bone = 'neck1' if nz < NECK2_Z else 'neck2'
+        for o, m in ((ring, mats['chrome']), (disc, mats['dark']), (sboot, mats['rubber'])):
+            neck_parts.append((smooth(assign(o, m), 40), bone))
+        tipb = p + n * 0.047
+        neck_parts.append((empty(f'c{i}_b', tipb), bone))
+        neck_parts.append((empty(f'c{i}_b2', tipb + n * 0.07), bone))
+    return head_parts, neck_parts
 
 
 def build_tv(mats):
@@ -457,9 +644,6 @@ def build_tv(mats):
     txt.location = (SCREEN_X, front_y - 0.04, cz + 0.02 - 0.44)
     parts.append(assign(bake_modifiers(txt), mats['chrome']))
 
-    mount = cylinder('Mount', 0.24, 0.2, 0.08, 48)
-    mount.location.z = cz - TV_H / 2 - 0.02
-    parts.append(smooth(assign(bevel(mount, 0.01, 2), mats['dark']), 40))
 
     # Antennas: pivot empties (animated by the site) with rods as children.
     antennas = []
@@ -488,33 +672,6 @@ def build_tv(mats):
     light = link(bpy.data.objects.new('ScreenLight', None))
     light.location = (SCREEN_X, front_y - 0.45, cz - TV_H / 2 - 0.15)
     return parts, antennas, light
-
-
-def build_cables(mats):
-    tv_bottom = TV_Z - TV_H / 2 + 0.02
-    specs = [
-        ((-0.42, 0.1, tv_bottom), (-0.26, 0.06, 0.5), 0.032, mats['cable'], -1),
-        ((-0.3, 0.22, tv_bottom), (-0.18, 0.17, 0.5), 0.022, mats['cable_accent'], -1),
-        ((0.4, 0.18, tv_bottom), (0.25, 0.1, 0.5), 0.028, mats['cable'], 1),
-    ]
-    cables = []
-    for i, (a, b, r, mat, out) in enumerate(specs):
-        cu = bpy.data.curves.new(f'Cable{i}', 'CURVE')
-        cu.dimensions = '3D'
-        cu.bevel_depth = r
-        cu.bevel_resolution = 3
-        cu.resolution_u = 24
-        sp = cu.splines.new('BEZIER')
-        sp.bezier_points.add(1)
-        p0, p1 = sp.bezier_points
-        p0.co, p1.co = a, b
-        p0.handle_right = Vector(a) + Vector((out * 0.1, -0.03, -0.28))
-        p0.handle_left = Vector(a) * 2 - p0.handle_right
-        p1.handle_left = Vector(b) + Vector((out * 0.12, -0.02, 0.3))
-        p1.handle_right = Vector(b) * 2 - p1.handle_left
-        obj = bake_modifiers(link(bpy.data.objects.new(f'Cable{i}', cu)))
-        cables.append(smooth(assign(obj, mat)))
-    return cables, tv_bottom
 
 
 def bake_ao(objs):
@@ -574,23 +731,6 @@ def parent_to_bone(obj, rig, bone):
     obj.matrix_world = mw
 
 
-def skin_cable(obj, rig, z_low, z_high):
-    for name in ('torso', 'head'):
-        obj.vertex_groups.new(name=name)
-    gt, gh = obj.vertex_groups['torso'], obj.vertex_groups['head']
-    for v in obj.data.vertices:
-        z = (obj.matrix_world @ v.co).z
-        t = min(max((z - z_low) / (z_high - z_low), 0), 1)
-        w = t * t * (3 - 2 * t)
-        gt.add([v.index], 1 - w, 'REPLACE')
-        gh.add([v.index], w, 'REPLACE')
-    mod = obj.modifiers.new('Armature', 'ARMATURE')
-    mod.object = rig
-    mw = obj.matrix_world.copy()
-    obj.parent = rig
-    obj.matrix_world = mw
-
-
 def main():
     reset()
     lin = lambda h: tuple(((int(h[i:i + 2], 16) / 255) / 12.92) if int(h[i:i + 2], 16) / 255 <= 0.04045 else (((int(h[i:i + 2], 16) / 255 + 0.055) / 1.055) ** 2.4) for i in (1, 3, 5))
@@ -609,7 +749,11 @@ def main():
         'cable': material('Cable', lin('#0d0d0e'), 0.35, coat=0.6, coat_rough=0.2),
         'cable_accent': material('CableAccent', tuple(c * 0.55 for c in ACCENT), 0.35, coat=0.6, coat_rough=0.2),
         'grille': material('Grille', (0.05, 0.05, 0.05), 0.6, 0.3),
+        'skin': material('Skin', SKIN, 0.46, sheen=0.7, sheen_tint=(0.75, 0.32, 0.25), sheen_rough=0.35, coat=0.08, coat_rough=0.4),
     }
+    sc, sn = skin_maps(SKIN)
+    add_image_map(mats['skin'], sc, 'color')
+    add_image_map(mats['skin'], sn, 'normal')
     add_image_map(mats['sweater'], knit_normal(), 'normal')
     gc, gn = grille_maps()
     add_image_map(mats['grille'], gc, 'color')
@@ -618,26 +762,25 @@ def main():
     print('building sweater...')
     sweater = build_sweater(mats)
     collar = build_collar(mats)
-    neck = build_neck(mats)
+    neck = build_human_neck(mats)
+    gasket = build_gasket(mats)
     print('building tv...')
     tv_parts, antennas, light = build_tv(mats)
-    cables, tv_bottom = build_cables(mats)
+    plug_parts, socket_parts = build_cable_ports(mats)
 
     print('baking ambient occlusion...')
     shell = [o for o in tv_parts if o.name in ('TVShell', 'TVBack')]
-    bake_ao([sweater, collar, *shell, neck['neck1'][0]])
+    bake_ao([sweater, collar, neck, *shell])
 
     print('rigging...')
     rig = build_rig()
     for o in (sweater, collar):
         parent_to_bone(o, rig, 'torso')
-    for bone, objs in neck.items():
-        for o in objs:
-            parent_to_bone(o, rig, bone)
-    for o in tv_parts + antennas + [light]:
+    for o in tv_parts + antennas + [light] + gasket + plug_parts:
         parent_to_bone(o, rig, 'head')
-    for c in cables:
-        skin_cable(c, rig, 0.55, tv_bottom - 0.05)
+    for o, bone in socket_parts:
+        parent_to_bone(o, rig, bone)
+    skin_neck(neck, rig)
 
     root = link(bpy.data.objects.new('TVHead', None))
     rig.parent = root
@@ -654,6 +797,7 @@ def main():
         export_draco_mesh_compression_enable=True,
         export_draco_mesh_compression_level=7,
         export_image_format='WEBP',
+        export_extras=True,
     )
     print('wrote', os.path.abspath(OUT), os.path.getsize(OUT) // 1024, 'KB')
 

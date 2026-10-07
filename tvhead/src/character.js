@@ -4,7 +4,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
-import { createScreenMaterial } from './screen.js';
 import * as tex from './textures.js';
 
 const SCREEN_W = 1.02;
@@ -371,9 +370,8 @@ function buildTV(m, screenMaterial, brand) {
   return { tv, screen, antennas, size: { W, H, D } };
 }
 
-export function buildCharacter(accent, { brand = 'TV/HEAD', chestText = '' } = {}) {
+export function buildCharacter(accent, { brand = 'TV/HEAD', chestText = '', screenMaterial } = {}) {
   const m = makeMaterials(accent);
-  const screenMaterial = createScreenMaterial(accent, SCREEN_W / SCREEN_H);
 
   const root = new THREE.Group();
   const torso = buildTorso(m, chestText, accent);

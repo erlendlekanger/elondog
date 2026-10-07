@@ -12,7 +12,9 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import gsap from 'gsap';
 import { buildCharacter, addChestDecal } from './character.js';
 import { createMarket, formatPrice, formatUsd, formatPct } from './market.js';
-import { createAgent, createChartCanvas, moodFrom } from './agent.js';
+import { createAgent, createChartCanvas, createTerminalCanvas, moodFrom } from './agent.js';
+import { createScreen } from './screen.js';
+import { createCables } from './cables.js';
 
 // ---------------------------------------------------------------------------
 // CONFIG: change these to make the site yours.
@@ -35,6 +37,9 @@ const CONFIG = {
   // Path to your own rigged model, e.g. 'models/me.glb'. Leave null to use the
   // built-in TV-head character. See README.md for how to make one.
   modelUrl: 'models/tvhead.glb',
+  // Your own clips for the TV, e.g. ['videos/face.mp4', 'videos/dance.mp4'] (muted, looped).
+  // Great place for Higgsfield / phone videos. They appear as channels with CRT effects.
+  screenVideos: [],
   // Bone names searched for in your model (case and symbols are ignored).
   bones: {
     torso: ['torso', 'spine2', 'mixamorigspine2', 'chest', 'spine1'],
@@ -82,8 +87,8 @@ new RGBELoader().load('assets/studio.hdr', (hdr) => {
 });
 
 const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 60);
-const cameraBase = new THREE.Vector3(0, 0.95, 7.8);
-const cameraTarget = new THREE.Vector3(0, 0.72, 0);
+const cameraBase = new THREE.Vector3(0, 1.1, 8.4);
+const cameraTarget = new THREE.Vector3(0, 0.88, 0);
 
 // Backdrop: soft radial glow behind the head, fading to black.
 const accent = new THREE.Color(CONFIG.accent);
@@ -144,13 +149,15 @@ scene.add(screenLight);
 // ---------------------------------------------------------------------------
 // Character
 // ---------------------------------------------------------------------------
-const character = buildCharacter(CONFIG.accent, { brand: CONFIG.name, chestText: CONFIG.ticker });
+const screen = createScreen(renderer, { color: CONFIG.accent, aspect: 1.02 / 0.8 });
+const character = buildCharacter(CONFIG.accent, { brand: CONFIG.name, chestText: CONFIG.ticker, screenMaterial: screen.material });
 character.root.position.y = -0.55;
 scene.add(character.root);
 
 let rig = character.rig;
-const screenMat = character.screenMaterial;
-const U = screenMat.uniforms;
+const screenMat = screen.material;
+const U = screen.uniforms;
+let cables = null;
 
 // Rest pose is captured so motion is always added on top of it (works for any rig).
 function captureRest(r) {
@@ -208,6 +215,10 @@ async function loadCustomModel(url) {
     antennas = pivots.map((o, i) => ({ arm: o, baseZ: o.rotation.z, baseX: o.rotation.x, side: i ? 1 : -1 }));
   }
   screenLightAnchor = find(['screenlight']) || head;
+  if (find(['c0a'])) {
+    cables = createCables(model, CONFIG.accent);
+    scene.add(cables.group);
+  }
   const sweater = find(['sweater']);
   if (sweater && CONFIG.ticker) addChestDecal(sweater, CONFIG.ticker, CONFIG.accent);
   customModel = model;
@@ -354,12 +365,18 @@ function restExpression() {
   gsap.to(U.uSad, { value: baseline.sad, duration: 0.5 });
 }
 
-function channelSwitch() {
+// Channel change like a real set: picture loses vertical hold and rolls,
+// static bursts in, then the new signal locks.
+function channelSwitch(onLocked) {
   gsap.timeline()
-    .to(U.uStatic, { value: 1, duration: 0.06 })
-    .to(U.uStatic, { value: 0, duration: 0.5, ease: 'power3.in', delay: 0.25 });
-  glitch(1, 0.7);
-  gsap.fromTo(U.uPower, { value: 6 }, { value: 3.2, duration: 0.8, ease: 'power2.out' });
+    .to(U.uStatic, { value: 1, duration: 0.05 })
+    .to(U.uWobble, { value: 1, duration: 0.05 }, 0)
+    .fromTo(U.uRoll, { value: 0 }, { value: 1.0, duration: 0.5, ease: 'power2.in' }, 0)
+    .add(() => onLocked?.(), 0.25)
+    .to(U.uStatic, { value: 0, duration: 0.35, ease: 'power3.in' }, 0.3)
+    .to(U.uWobble, { value: 0, duration: 0.6, ease: 'power2.out' }, 0.3)
+    .set(U.uRoll, { value: 0 });
+  glitch(0.8, 0.6);
 }
 
 let blinkTimer = 2;
@@ -404,7 +421,7 @@ let talking = false;
 const SCRIPT = {
   start: {
     text: () => `gm. i'm ${CONFIG.name}, a tv that watches the ${CONFIG.ticker} chart 24/7. move your mouse, i'm watching you too.`,
-    choices: [[() => `what is ${CONFIG.ticker}?`, 'what'], ['show me the chart', 'chart'], ['how are we doing?', 'mood'], ['copy CA', 'ca']],
+    choices: [[() => `what is ${CONFIG.ticker}?`, 'what'], ['show me the chart', 'chart'], ['what are you thinking?', 'think'], ['copy CA', 'ca']],
   },
   what: {
     text: () => `${CONFIG.ticker} is a memecoin with a tv for a head. no roadmap, just vibes, antennas and a very honest screen.`,
@@ -414,6 +431,11 @@ const SCRIPT = {
   chart: {
     text: () => `switching to channel ${CONFIG.ticker}...`,
     do: () => showChart(7),
+    choices: [['how are we doing?', 'mood'], ['back', 'start']],
+  },
+  think: {
+    text: () => 'switching to my internal monologue. it is mostly numbers and vibes.',
+    do: () => showChannel('terminal', 8),
     choices: [['how are we doing?', 'mood'], ['back', 'start']],
   },
   mood: {
@@ -499,11 +521,41 @@ function copyCA() {
   navigator.clipboard?.writeText(CONFIG.contractAddress).then(() => toast('CA copied'), () => toast(CONFIG.contractAddress));
 }
 
-function showChart(seconds = 6) {
-  channelSwitch();
-  gsap.to(U.uChart, { value: 1, duration: 0.15, delay: 0.2 });
-  gsap.to(U.uChart, { value: 0, duration: 0.15, delay: seconds, onStart: () => glitch(0.6) });
+// Channels: 0 = face, then chart, terminal and any videos from CONFIG.screenVideos.
+const terminal = createTerminalCanvas(CONFIG.ticker);
+const terminalTexture = new THREE.CanvasTexture(terminal.canvas);
+U.tTerm.value = terminalTexture;
+const videos = CONFIG.screenVideos.map((src) => {
+  const v = document.createElement('video');
+  Object.assign(v, { src, muted: true, loop: true, playsInline: true, crossOrigin: 'anonymous', preload: 'auto' });
+  return v;
+});
+let channelTimer = null;
+let onChannel = 'face';
+
+function tuneTo(name) {
+  channelSwitch(() => {
+    U.uChart.value = name === 'chart' ? 1 : 0;
+    U.uTerm.value = name === 'terminal' ? 1 : 0;
+    U.uVideo.value = name.startsWith('video') ? 1 : 0;
+    videos.forEach((v) => v.pause());
+    if (name.startsWith('video')) {
+      const v = videos[Number(name.slice(5))];
+      v.currentTime = 0;
+      v.play().catch(() => {});
+      U.tVideo.value = new THREE.VideoTexture(v);
+    }
+    onChannel = name;
+  });
 }
+
+function showChannel(name, seconds = 6) {
+  clearTimeout(channelTimer);
+  tuneTo(name);
+  channelTimer = setTimeout(() => tuneTo('face'), seconds * 1000);
+}
+
+function showChart(seconds = 6) { showChannel('chart', seconds); }
 
 // Accent colour follows the market: green pump, red dump.
 const accentNow = new THREE.Color(CONFIG.accent);
@@ -562,6 +614,7 @@ function pushFeed(text) {
   time.textContent = new Date().toTimeString().slice(0, 5);
   li.append(time, text);
   feedEl.append(li);
+  terminal.push(text);
   while (feedEl.children.length > 12) feedEl.firstElementChild.remove();
 }
 
@@ -600,7 +653,7 @@ function resize() {
   finish.uniforms.uRes.value.set(w, h);
   camera.aspect = w / h;
   // Pull back on tall screens so the whole head fits.
-  cameraBase.z = w / h < 0.8 ? 12 : w / h < 1.2 ? 9.5 : 7.8;
+  cameraBase.z = w / h < 0.8 ? 12.8 : w / h < 1.2 ? 10.2 : 8.4;
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
@@ -615,6 +668,7 @@ const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.V
 const antennaState = [{ x: 0, v: 0 }, { x: 0, v: 0 }];
 let prevHeadY = 0;
 const clock = new THREE.Clock();
+const neckA = new THREE.Vector3(), neckB = new THREE.Vector3();
 
 function updateCables(lag) {
   for (const c of character.cables) {
@@ -691,7 +745,7 @@ function tick() {
 
   // Screen light follows the TV and flickers with the picture.
   screenLightAnchor.getWorldPosition(screenLight.position);
-  screenLight.intensity = (1.3 + Math.sin(t * 50) * 0.05 + U.uStatic.value * 1.5) * (U.uPower.value / 3.2);
+  screenLight.intensity = (1.3 + Math.sin(t * 50) * 0.05 + U.uStatic.value * 1.5) * (U.uPower.value / 2.4);
 
   // Camera parallax.
   camera.position.set(cameraBase.x + slow.x * 0.35, cameraBase.y + slow.y * 0.2, cameraBase.z);
@@ -699,6 +753,10 @@ function tick() {
 
   backdrop.material.uniforms.uTime.value = t;
   finish.uniforms.uTime.value = t;
+  if (onChannel === 'terminal') { terminal.draw(t); terminalTexture.needsUpdate = true; }
+  if (cables) cables.step(dt, rig.neck1.getWorldPosition(neckA), rig.head.getWorldPosition(neckB), 0.235);
+  U.uDecay.value = Math.pow(0.8, dt * 60); // phosphor fade, frame-rate independent
+  screen.update();
   composer.render();
   requestAnimationFrame(tick);
 }
@@ -722,16 +780,18 @@ document.documentElement.style.setProperty('--accent', CONFIG.accent);
   tick();
   const loader = document.querySelector('[data-loader]');
   gsap.to(loader, { opacity: 0, duration: 0.8, delay: 0.3, onComplete: () => loader.remove() });
-  U.uPower.value = 0;
-  gsap.timeline({ delay: 0.5 })
-    .to(U.uStatic, { value: 1, duration: 0.05 })
-    .to(U.uPower, { value: 3.2, duration: 0.6, ease: 'power2.out' })
-    .to(U.uStatic, { value: 0, duration: 0.6, ease: 'power3.in' }, '<0.2')
-    .add(() => { nodYes(); say('start'); }, '+=0.2');
+  // CRT power-on: a dot, a bright line, then the picture opens up.
+  U.uPowerOn.value = 0;
+  gsap.timeline({ delay: 0.6 })
+    .to(U.uPowerOn, { value: 1, duration: 1.0, ease: 'power3.out' })
+    .fromTo(U.uStatic, { value: 0.6 }, { value: 0, duration: 0.8, ease: 'power2.in' }, 0.4)
+    .add(() => { nodYes(); say('start'); }, '+=0.1');
 
   market.start();
   pushFeed('booting agent... signal acquired');
   setInterval(() => pushFeed(agent.next()), 3500);
-  // Flip to the chart channel now and then.
-  setInterval(() => { if (!document.hidden) showChart(6); }, 26000);
+  // Flip channels now and then.
+  const auto = ['chart', 'terminal', ...videos.map((_, i) => `video${i}`)];
+  let autoI = 0;
+  setInterval(() => { if (!document.hidden && onChannel === 'face') showChannel(auto[autoI++ % auto.length], 7); }, 24000);
 })();

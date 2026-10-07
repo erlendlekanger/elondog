@@ -115,3 +115,42 @@ export function createChartCanvas(ticker) {
 
   return { canvas, draw };
 }
+
+// Terminal channel: the agent's feed as green-screen text on the TV.
+export function createTerminalCanvas(ticker) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 500;
+  const ctx = canvas.getContext('2d');
+  const lines = [];
+
+  function wrap(text, max) {
+    const out = [];
+    let line = '';
+    for (const word of text.split(' ')) {
+      if ((line + ' ' + word).trim().length > max) { out.push(line); line = word; } else line = (line + ' ' + word).trim();
+    }
+    if (line) out.push(line);
+    return out;
+  }
+
+  function push(text) {
+    lines.push(...wrap(`> ${text}`, 34));
+    while (lines.length > 11) lines.shift();
+  }
+
+  function draw(time = 0) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '500 26px "JetBrains Mono", monospace';
+    ctx.fillText(`${ticker} AGENT v0.1`, 60, 78);
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(60, 92, 520, 2);
+    ctx.globalAlpha = 1;
+    ctx.font = '400 22px "JetBrains Mono", monospace';
+    lines.forEach((l, i) => ctx.fillText(l, 60, 134 + i * 30));
+    if (Math.floor(time * 2) % 2 === 0) ctx.fillRect(60, 134 + lines.length * 30 - 18, 13, 22);
+  }
+
+  return { canvas, push, draw };
+}

@@ -110,3 +110,16 @@ export function plasticRoughness() {
 export function plasticNormal() {
   return normalMapFrom(256, (u, v) => valueNoise(u * 80, v * 80) * 0.6 + valueNoise(u * 20, v * 20) * 0.4, 0.6);
 }
+
+// Braided cable sleeve: diagonal over-under weave.
+let braidCache = null;
+export function braidNormal() {
+  if (braidCache) return braidCache;
+  braidCache = normalMapFrom(128, (u, v) => {
+    const a = Math.abs(Math.sin((u * 8 + v * 4) * Math.PI));
+    const b = Math.abs(Math.sin((u * 8 - v * 4) * Math.PI));
+    const over = (Math.floor(u * 8 + v * 4) + Math.floor(u * 8 - v * 4)) % 2 === 0;
+    return (over ? a : b) * 0.8 + hash(u * 128, v * 128) * 0.1;
+  }, 3.0);
+  return braidCache;
+}

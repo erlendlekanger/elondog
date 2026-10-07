@@ -17,7 +17,9 @@ Ingen byggesteg. Alt er vanlige filer som Vercel serverer direkte.
 | `src/screen.js` | Ansiktet på skjermen (shader) |
 | `src/textures.js` | Strikk, plast og høyttaler-teksturer, generert i kode |
 | `src/market.js` | Kursdata fra DexScreener (eller demo) |
-| `src/agent.js` | Agent-feeden, humør og chartet på TV-skjermen |
+| `src/agent.js` | Agent-feeden, humør, chart- og terminalkanalen |
+| `src/screen.js` | CRT-skjermen (innhold, etterglød, glassrør) |
+| `src/cables.js` | Ledningsfysikken |
 | `assets/studio.hdr` | Studiolys for refleksjoner (Poly Haven, CC0) |
 | `models/tvhead.glb` | 3D-modellen (laget av `tools/build_model.py`) |
 | `tools/build_model.py` | Blender-skriptet som bygger modellen |
@@ -58,19 +60,41 @@ npx http-server .
 ## 3D-modellen (`models/tvhead.glb`)
 
 Figuren er en ekte 3D-modell laget i **Blender med kode**: `tools/build_model.py`.
-Skriptet lager genser med folder, ribbestrikket krage, segmentert nakke, CRT-TV med
-avrundede kanter, knotter, høyttaler, antenner og kabler. Det legger også på skjelett
-(`torso → neck1 → neck2 → head`) og baker inn myke skygger (ambient occlusion) med Cycles.
+Skriptet lager:
+- **menneskehals** med hud, porer, halsmuskler, adamseple og skjelett, slik at huden bøyer seg mykt når hodet snur
+- **plugger og kontakter** under TV-en og i halsen, der ledningene går inn
+- genser med folder, ribbestrikket krage og en CRT-TV med avrundede kanter, knotter, høyttaler, merke og antenner
+- innbakte myke skygger (ambient occlusion) med Cycles
 
 Lag modellen på nytt etter endringer i skriptet:
 
 ```bash
 blender -b -P tools/build_model.py
-# eller med navn på TV-merket:
-TVHEAD_BRAND="DITTNAVN" blender -b -P tools/build_model.py
+# med eget TV-merke og egen hudfarge:
+TVHEAD_BRAND="DITTNAVN" TVHEAD_SKIN="#8d5a3b" blender -b -P tools/build_model.py
 ```
 
 Siden laster `models/tvhead.glb` automatisk. Hvis filen mangler, brukes den innebygde figuren i `src/character.js`.
+
+## Ledningene
+
+Ledningene er ikke en del av modellen. De simuleres live i nettleseren (`src/cables.js`) som tau med
+tyngdekraft, treghet og kollisjon mot halsen. Siden finner endepunktene i modellen (`c0_a` … `c6_b`),
+så du kan flytte pluggene i Blender-skriptet (`CABLES`-lista).
+
+## Skjermen
+
+`src/screen.js` bygger bildet som en ekte CRT i tre steg: innhold → fosfor-etterglød → glassrør
+med krumning, RGB-striper, scanlines, glød, synk-vingling, rulling ved kanalbytte og strek-av/på-effekt.
+
+Kanaler: ansikt, chart, terminal (agentens tanker) og **dine egne videoer**:
+
+```js
+screenVideos: ['videos/ansikt.mp4', 'videos/dans.mp4'],
+```
+
+Legg mp4-filer i `videos/`. Korte klipp (5–15 s), helst mørk bakgrunn, gjerne laget i Higgsfield
+eller filmet med mobilen. De vises med full CRT-effekt og byttes inn som egne kanaler.
 
 ## Bytte til en helt annen 3D-figur
 

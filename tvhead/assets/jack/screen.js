@@ -3,6 +3,29 @@ import { SHOWS, SHOW_ORDER } from './shows.js';
 
 const FACE_SIZE = 512;
 
+// Pucker logo geometry (matches logo/pucker.svg), centred on the origin.
+const PUCKER = (() => {
+  const path = new Path2D();
+  const n = 11;
+  const P = (r, a) => [r * Math.cos(a), r * Math.sin(a)];
+  for (let i = 0; i < n; i++) {
+    const a = (i * 2 * Math.PI) / n;
+    const r0 = 34, r1 = 150, tw = 0.38, w0 = 0.05, w1 = 0.2;
+    const p1 = P(r0, a - w0), p2 = P(r0, a + w0);
+    const p3 = P(r1, a + tw + w1 * 0.35), p4 = P(r1, a + tw - w1);
+    const c1 = P((r0 + r1) * 0.55, a + tw * 0.35 + w1 * 0.6);
+    const c2 = P((r0 + r1) * 0.62, a + tw * 0.55 - w1 * 0.9);
+    const tip = P(r1 + 22, a + tw - w1 * 0.3);
+    path.moveTo(...p1);
+    path.lineTo(...p2);
+    path.quadraticCurveTo(...c1, ...p3);
+    path.quadraticCurveTo(...tip, ...p4);
+    path.quadraticCurveTo(...c2, ...p1);
+    path.closePath();
+  }
+  return path;
+})();
+
 const MOODS = {
   neutral: { browL: 0, browR: 0, browY: 0, eyeH: 1, eyeW: 1, happy: 0 },
   happy: { browL: -0.05, browR: 0.05, browY: -6, eyeH: 0.9, eyeW: 1.05, happy: 1 },
@@ -189,7 +212,7 @@ export class ScreenFace {
     this.nextShow = 4;
     this.showCanvas = document.createElement('canvas');
     this.showCanvas.width = this.showCanvas.height = FACE_SIZE;
-    this.warmTint = new THREE.Color(1.0, 0.86, 0.68);
+    this.warmTint = new THREE.Color(1.0, 0.95, 0.88);
     this.white = new THREE.Color(1, 1, 1);
     this.eyeLook = new THREE.Vector2();
     this.mouthPhase = 0;
@@ -281,6 +304,7 @@ export class ScreenFace {
   }
 
   update(t, dt, { look, talk }) {
+    this.dt = dt;
     const u = this.material.uniforms;
     u.uTime.value = t;
     this.glitchAmt *= Math.pow(0.02, dt);
@@ -335,68 +359,27 @@ export class ScreenFace {
     c.save();
     const faceAlpha = Math.max(0, 1 - this.textAlpha * 1.15) * (1 - this.showAlpha);
     c.globalAlpha = faceAlpha;
-    c.translate(S / 2, S / 2);
-    c.scale(1.5, 1.5);
-    c.translate(-S / 2, -S / 2);
 
-    const lx = this.eyeLook.x * 20;
+    // The face is the Pucker logo. It breathes, tracks the pointer, squeezes on blinks
+    // and pulses with speech.
+    const lx = this.eyeLook.x * 18;
     const ly = -this.eyeLook.y * 14;
-    const cx = S / 2 + lx;
-    const cy = S * 0.45 + ly;
-    const gap = 76;
-    const ew = 56 * m.eyeW;
-    const eh = 78 * m.eyeH * (1 - blinkAmt * 0.92);
-
+    const pulse = talk * (Math.sin(t * 13.7) * 0.5 + Math.sin(t * 8.3) * 0.5);
+    const breathe = Math.sin(t * 1.4) * 0.015;
+    const squeeze = blinkAmt * 0.14 + Math.max(0, pulse) * 0.07;
+    const scale = (1.05 + breathe + m.happy * 0.04 + (m.eyeH - 1) * 0.25 - squeeze) * 1.0;
+    this.spin = (this.spin || 0) + (0.12 + m.happy * 0.35 + talk * 0.25) * this.dt;
+    c.translate(S / 2 + lx, S / 2 + ly);
+    c.rotate(this.spin);
+    c.scale(scale, scale);
     c.fillStyle = '#fff';
-    c.strokeStyle = '#fff';
-
-    for (const side of [-1, 1]) {
-      const ex = cx + side * gap;
-      // eye: rounded capsule; happy mood carves the bottom into an arc
-      c.beginPath();
-      roundRect(c, ex - ew / 2, cy - eh / 2, ew, eh, Math.min(ew, eh) * 0.48);
-      c.fill();
-      if (m.happy > 0.02) {
-        c.save();
-        c.globalCompositeOperation = 'destination-out';
-        c.beginPath();
-        c.ellipse(ex, cy + eh * 0.62, ew * 0.85, eh * 0.55 * m.happy, 0, 0, Math.PI * 2);
-        c.fill();
-        c.restore();
-      }
-      // brows: heavy, straight bars (JACK's signature)
-      const tilt = side < 0 ? m.browL : m.browR;
-      const by = cy - 70 * m.eyeH + m.browY - (talk * Math.max(0, Math.sin(t * 5.3 + side)) * 4);
-      c.save();
-      c.translate(ex, by);
-      c.rotate(tilt * side * -1);
-      c.beginPath();
-      roundRect(c, -40, -7, 80, 14, 7);
-      c.fill();
-      c.restore();
-    }
-
-    // mouth: oscilloscope while talking, relaxed half-smile otherwise
-    const my = cy + 118;
-    c.lineWidth = 7;
-    c.lineCap = 'round';
-    c.lineJoin = 'round';
+    c.fill(PUCKER);
+    // the hole opens and closes with speech
+    const hole = 20 * (1 + Math.max(0, -pulse) * 0.55 + (m.eyeH - 1) * 0.6 - blinkAmt * 0.5);
+    c.globalCompositeOperation = 'destination-out';
     c.beginPath();
-    const mw = 118;
-    const amp = talk * 26;
-    for (let i = 0; i <= 64; i++) {
-      const p = i / 64;
-      const x = cx - mw / 2 + p * mw;
-      const env = Math.sin(p * Math.PI);
-      const wave =
-        Math.sin(p * 18 + t * 21) * 0.55 + Math.sin(p * 31 - t * 13) * 0.3 + Math.sin(p * 7 + t * 9) * 0.35;
-      const smile = (Math.pow(p - 0.5, 2) * -1 + 0.25) * 22 * (0.4 + m.happy) * (1 - talk);
-      const smirk = (p - 0.5) * -10 * (m.browR < -0.1 ? 1 : 0) * (1 - talk);
-      const y = my + wave * amp * env + smile + smirk;
-      if (i === 0) c.moveTo(x, y);
-      else c.lineTo(x, y);
-    }
-    c.stroke();
+    c.arc(0, 0, Math.max(6, hole), 0, Math.PI * 2);
+    c.fill();
     c.restore();
 
     if (this.showAlpha > 0.01 && (this.show || this.lastShow)) {
@@ -428,14 +411,4 @@ export class ScreenFace {
       c.restore();
     }
   }
-}
-
-function roundRect(c, x, y, w, h, r) {
-  r = Math.max(0, Math.min(r, w / 2, h / 2));
-  c.moveTo(x + r, y);
-  c.arcTo(x + w, y, x + w, y + h, r);
-  c.arcTo(x + w, y + h, x, y + h, r);
-  c.arcTo(x, y + h, x, y, r);
-  c.arcTo(x, y, x + w, y, r);
-  c.closePath();
 }

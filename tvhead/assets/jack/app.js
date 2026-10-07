@@ -1,5 +1,5 @@
 import { JackScene } from './scene.js';
-import { STEPS, BRIEF_NOTE, LABELS, EMAIL } from './content.js';
+import { STEPS } from './content.js';
 import { SoundBoard } from './sound.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -13,8 +13,6 @@ const el = {
   back: $('#back'),
   progress: $('#progress'),
   toast: $('#toast'),
-  note: $('#note'),
-  noteContent: $('#note-content'),
   loader: $('#loader'),
   loaderText: $('#loader-text'),
   loaderCount: $('#loader-count'),
@@ -26,15 +24,8 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-const PROJECT_TYPES = {
-  branding: 'Branding',
-  digital: 'Web',
-  'branding-digital': 'Branding & Web',
-  custom: 'Custom',
-};
-
 /* ————————————————— Loader ————————————————— */
-const LOADER_LINES = ['Locomotive®', 'J.A.C.K', 'Just-in-time Assistant', 'for Creative Kickoffs', 'Based in Montreal, Canada'];
+const LOADER_LINES = ['Agent Butthole', 'booting the pucker', 'every AI logo is a butthole', 'mine just admits it', 'gm'];
 const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*<>[]{}/\\_-+=?';
 
 class Loader {
@@ -167,19 +158,9 @@ class Jack {
     });
     document.querySelector('[data-talk]').addEventListener('click', () => {
       this.unlockAudio();
-      this.data.goal = 'rfp';
-      this.go('project-intro');
-    });
-    document.querySelectorAll('[data-quit]').forEach((a) =>
-      a.addEventListener('click', (e) => {
-        if (this.history.length > 2 && !window.confirm('Are you sure you want to leave J.A.C.K? You’ll lose your progress.')) e.preventDefault();
-      })
-    );
-    el.note.addEventListener('click', (e) => {
-      if (e.target === el.note || e.target.closest('[data-close-note]')) this.closeNote();
+      this.go('ca');
     });
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') this.closeNote();
       if ((e.key === 'Enter' || e.key === 'ArrowRight') && this.autoNext && !e.target.closest('input, textarea, button, a')) {
         e.preventDefault();
         this.autoNext();
@@ -263,7 +244,6 @@ class Jack {
     const token = ++this.token;
     clearTimeout(this.autoTimer);
     this.autoNext = null;
-    this.closeNote();
     this.sound.stopSpeech();
 
     const lineHtml = this.fill(pick(this.resolveLines(step)));
@@ -316,11 +296,6 @@ class Jack {
       delay += 55;
       return node;
     };
-
-    if (step.showForm) {
-      wrap.appendChild(reveal(this.buildRecap(step)));
-      return;
-    }
 
     const choices = this.resolveChoices(step);
     if (choices) {
@@ -485,15 +460,6 @@ class Jack {
       fields.push({ input, get: () => ctrl.value.trim(), wrap: field, ctrl });
     });
 
-    if (step.note === 'brief') {
-      const link = document.createElement('button');
-      link.type = 'button';
-      link.className = 'c-link';
-      link.textContent = BRIEF_NOTE.title;
-      link.addEventListener('click', () => this.openNote());
-      form.appendChild(link);
-    }
-
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       let firstBad = null;
@@ -548,85 +514,6 @@ class Jack {
     row.className = 'c-form_row';
     row.appendChild(this.nextButton());
     return row;
-  }
-
-  recapEntries() {
-    const d = this.data;
-    const order = d.goal === 'rfp' ? ['fullName', 'company', 'role', 'projectType', 'customServices', 'budget', 'deadline', 'message', 'briefUrl', 'email'] : ['message', 'email'];
-    return order
-      .filter((k) => d[k] && (!Array.isArray(d[k]) || d[k].length))
-      .map((k) => {
-        let v = d[k];
-        if (k === 'projectType') v = PROJECT_TYPES[v] || v;
-        if (Array.isArray(v)) v = v.join(', ');
-        return [LABELS[k] || k, String(v)];
-      });
-  }
-
-  buildRecap(step) {
-    const isProject = this.data.goal === 'rfp';
-    const entries = this.recapEntries();
-    const card = document.createElement('div');
-    card.className = 'c-recap';
-    card.innerHTML = `
-      <p class="c-recap_title"><span>${isProject ? 'Project recap' : 'Your message'}</span><span>To ${EMAIL}</span></p>
-      <dl>${entries.map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd>`).join('')}</dl>
-      <div class="c-recap_actions"></div>`;
-    const actions = card.querySelector('.c-recap_actions');
-
-    const subject = isProject ? `New project${this.data.company ? ` — ${this.data.company}` : ''} (via J.A.C.K)` : 'A quick word for the team (via J.A.C.K)';
-    const body = entries.map(([k, v]) => `${k}: ${v}`).join('\n') + '\n\n— Sent with J.A.C.K';
-    const mailto = `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    const send = document.createElement('a');
-    send.className = 'c-button -dark';
-    send.href = mailto;
-    send.textContent = 'Send to Locomotive';
-    send.addEventListener('click', () => {
-      this.sound.click();
-      this.scene.face.setMood('happy');
-      this.scene.glitch(0.6);
-      setTimeout(() => this.current && STEPS[this.current] === step && this.go(step.next), 900);
-    });
-
-    const copy = document.createElement('button');
-    copy.type = 'button';
-    copy.className = 'c-button';
-    copy.textContent = 'Copy recap';
-    copy.addEventListener('click', async () => {
-      this.sound.click();
-      try {
-        await navigator.clipboard.writeText(`To: ${EMAIL}\nSubject: ${subject}\n\n${body}`);
-        this.toast('Recap copied — paste it into an email to ' + EMAIL);
-      } catch (e) {
-        this.toast(EMAIL);
-      }
-    });
-
-    const edit = document.createElement('button');
-    edit.type = 'button';
-    edit.className = 'c-button -secondary';
-    edit.textContent = 'Edit';
-    edit.addEventListener('click', () => this.back());
-
-    actions.append(send, copy, edit);
-    return card;
-  }
-
-  openNote() {
-    el.noteContent.innerHTML = `
-      <h2>${BRIEF_NOTE.heading}</h2>
-      <p>${BRIEF_NOTE.intro}</p>
-      <ol>${BRIEF_NOTE.items.map(([t, d]) => `<li><div><h3>${t}</h3><p>${d}</p></div></li>`).join('')}</ol>`;
-    el.note.classList.add('is-active');
-    el.note.setAttribute('aria-hidden', 'false');
-    $('[data-close-note]', el.note).focus({ preventScroll: true });
-  }
-
-  closeNote() {
-    if (!el.note.classList.contains('is-active')) return;
-    el.note.classList.remove('is-active');
-    el.note.setAttribute('aria-hidden', 'true');
   }
 
   toast(msg) {

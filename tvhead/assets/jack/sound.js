@@ -1,5 +1,5 @@
 // Small synthesized sound design: a warm room-tone drone, UI ticks, CRT glitches,
-// and JACK’s voice through the browser’s speech engine (male voices only).
+// and the agent’s voice through the browser’s speech engine (male voices only).
 
 const MALE_VOICES = [
   'Microsoft Andrew', 'Microsoft Guy', 'Microsoft Ryan', 'Microsoft Christopher', 'Microsoft Davis', 'Microsoft Eric', 'Microsoft Brian',
@@ -162,7 +162,7 @@ export class SoundBoard {
     if (!this.voice) return null;
     const synth = window.speechSynthesis;
     synth.cancel();
-    const u = new SpeechSynthesisUtterance(text.replace(/J\.A\.C\.K/g, 'Jack').replace(/LISA/g, 'Lisa'));
+    const u = new SpeechSynthesisUtterance(text.replace(/\bCA\b/g, 'C.A.').replace(/\bgm\b/gi, 'good morning'));
     u.voice = this.voice;
     u.lang = this.voice.lang;
     u.rate = 1.02;

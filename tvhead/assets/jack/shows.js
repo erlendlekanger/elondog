@@ -1,4 +1,4 @@
-// Little pump.fun-flavoured "broadcasts" JACK's CRT cycles through between lines:
+// Little pump.fun-flavoured "broadcasts" the agent's CRT cycles through between lines:
 // an ASCII pill, a pumping candle chart, and a bonding-curve run to King of the Hill.
 
 const GREEN = '#7CFFA0';
@@ -116,7 +116,7 @@ export const SHOWS = {
       c.textBaseline = 'alphabetic';
       c.fillStyle = WHITE;
       c.font = `600 34px ${MONO}`;
-      c.fillText('$JACK', x0, 78);
+      c.fillText('$BUTTHOLE', x0, 78);
       c.fillStyle = pct >= 0 ? GREEN : RED;
       c.textAlign = 'right';
       c.font = `700 ${46 + Math.sin(t * 8) * 2}px ${MONO}`;
@@ -175,12 +175,12 @@ export const SHOWS = {
     },
   },
 
-  /** Quick "$JACK" ticker tape with WAGMI / LFG chants. */
+  /** Quick "$BUTTHOLE" ticker tape with WAGMI / LFG chants. */
   ticker: {
     duration: 5,
     draw(c, S, p, t) {
       c.textBaseline = 'middle';
-      const rows = ['$JACK ▲ 420.69%', 'WAGMI', 'LFG 🚀', 'DEGEN MODE: ON', 'NFA · DYOR', 'GM GM GM'];
+      const rows = ['$BUTTHOLE ▲ 420.69%', 'WAGMI', 'LFG 🚀', 'DEGEN MODE: ON', 'NFA · DYOR', 'GM GM GM'];
       for (let r = 0; r < 7; r++) {
         const y = S * (0.14 + r * 0.12);
         const speed = (r % 2 ? -1 : 1) * (90 + r * 18);

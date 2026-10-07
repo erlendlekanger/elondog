@@ -114,7 +114,7 @@ export class JackScene {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.NoToneMapping; // same output as LISA
+    renderer.toneMapping = THREE.NoToneMapping;
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
     this.renderer = renderer;
@@ -141,11 +141,11 @@ export class JackScene {
       new EXRLoader(manager).setDataType(THREE.FloatType).loadAsync('assets/jack/envmap.exr'),
     ]);
 
-    // Same studio light as LISA: image-based lighting from her studio HDR
+    // Studio lighting: image-based lighting from the studio HDR
     // plus a cool ambient fill; the baked lightmap is multiplied in per material.
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     exr.mapping = THREE.EquirectangularReflectionMapping;
-    // LISA's cream plastics balance the studio's cool cast; JACK's dark materials don't,
+    // The studio HDR has a cool cast that tints dark materials,
     // so pull the HDR most of the way to neutral while keeping its light shapes.
     const sat = 0.25;
     const d = exr.image.data;
@@ -225,7 +225,7 @@ export class JackScene {
       });
     });
 
-    // Detail textures LISA keeps on hidden "Maps" planes
+    // Detail textures stored on hidden "Maps" planes in the model
     const mapsMat = (name) => root.getObjectByName(name)?.material;
     const lightmap = mapsMat('Glitter004')?.map;
     if (lightmap) lightmap.channel = 1;
@@ -241,7 +241,7 @@ export class JackScene {
     const fabricNormal = tiled(mapsMat('Glitter003')?.normalMap, 5);
     const poresNormal = tiled(mapsMat('Glitter001')?.normalMap, 20);
 
-    // Baked lighting: multiply the lightmap (uv1) into the indirect diffuse, like LISA's PBR shader.
+    // Baked lighting: multiply the lightmap (uv1) into the indirect diffuse.
     const bake = (mat, { intensity = 0.8, backfaceDim = false } = {}) => {
       if (!lightmap || !mat.aoMap) return mat;
       mat.onBeforeCompile = (shader) => {
@@ -265,7 +265,7 @@ export class JackScene {
       return mat;
     };
 
-    // Charcoal rib-knit turtleneck (LISA's fabric setup, darker yarn)
+    // Charcoal rib-knit turtleneck
     byName.Cloth?.forEach(({ mat }) => {
       mat.color = new THREE.Color(0x545b57);
       mat.envMapIntensity = 2;
@@ -289,7 +289,7 @@ export class JackScene {
       bake(mat);
     });
 
-    // TV: glossy graphite shell instead of LISA's cream plastic
+    // TV: glossy graphite shell
     byName.light_grey?.forEach(({ mat }) => {
       mat.color = new THREE.Color(0x1d1d20);
       bake(mat);

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from '../../vendor/three/addons/loaders/GLTFLoader.js';
-import { RoomEnvironment } from '../../vendor/three/addons/environments/RoomEnvironment.js';
+import { EXRLoader } from '../../vendor/three/addons/loaders/EXRLoader.js';
 import { ScreenFace } from './screen.js';
 
 const smooth = (a, b, x) => {
@@ -114,8 +114,7 @@ export class JackScene {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMapping = THREE.NoToneMapping; // same output as LISA
     renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
     this.renderer = renderer;
@@ -137,12 +136,36 @@ export class JackScene {
   async load(onProgress = () => {}) {
     const manager = new THREE.LoadingManager();
     manager.onProgress = (_, loaded, total) => onProgress(loaded / total);
-    const gltf = await new GLTFLoader(manager).loadAsync('assets/jack/base.glb');
+    const [gltf, exr] = await Promise.all([
+      new GLTFLoader(manager).loadAsync('assets/jack/base.glb'),
+      new EXRLoader(manager).setDataType(THREE.FloatType).loadAsync('assets/jack/envmap.exr'),
+    ]);
 
+    // Same studio light as LISA: image-based lighting from her studio HDR
+    // plus a cool ambient fill; the baked lightmap is multiplied in per material.
     const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = 0.75;
+    exr.mapping = THREE.EquirectangularReflectionMapping;
+    // LISA's cream plastics balance the studio's cool cast; JACK's dark materials don't,
+    // so pull the HDR most of the way to neutral while keeping its light shapes.
+    const sat = 0.25;
+    const d = exr.image.data;
+    let avg = [0, 0, 0];
+    for (let i = 0; i < d.length; i += 4) for (let c = 0; c < 3; c++) avg[c] += d[i + c];
+    const lum = (avg[0] + avg[1] + avg[2]) / 3;
+    const bal = avg.map((a) => lum / a);
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i] * bal[0], g = d[i + 1] * bal[1], b = d[i + 2] * bal[2];
+      const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      d[i] = y + (r - y) * sat;
+      d[i + 1] = y + (g - y) * sat;
+      d[i + 2] = y + (b - y) * sat;
+    }
+    exr.needsUpdate = true;
+    this.scene.environment = pmrem.fromEquirectangular(exr).texture;
+    this.scene.environmentRotation.set(0, -0.7 * Math.PI, 0);
+    exr.dispose();
     pmrem.dispose();
+    this.scene.add(new THREE.AmbientLight(0x9fb3cc, 0.55));
 
     const root = gltf.scene;
     ['Maps', 'Raycaster', 'Plane001', 'FaceCam'].forEach((n) => {
@@ -183,15 +206,7 @@ export class JackScene {
     this.rig.add(root);
     this.root = root;
 
-    // Studio lights on top of the HDR environment
-    const key = new THREE.DirectionalLight(0xfff3e6, 1.6);
-    key.position.set(-4, 5, 6);
-    const rim = new THREE.DirectionalLight(0xdfe8ff, 2.2);
-    rim.position.set(5, 3, -5);
-    const fill = new THREE.HemisphereLight(0xe9ecf2, 0x2a2b30, 0.45);
     this.screenLight = new THREE.PointLight(0xffb36b, 0, 3.2, 2);
-    this.screenLight.position.set(0, 0.25, 1.9);
-    this.scene.add(key, rim, fill);
     root.getObjectByName('TV').add(this.screenLight);
     this.screenLight.position.set(0, -0.6, 0.9);
 
@@ -210,50 +225,77 @@ export class JackScene {
       });
     });
 
-    // Charcoal rib-knit turtleneck
-    byName.Cloth?.forEach(({ mesh, mat }) => {
-      const m = new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(0x1f2023),
-        map: mat.map,
-        normalMap: mat.normalMap,
-        normalScale: new THREE.Vector2(1.25, 1.25),
-        roughnessMap: mat.roughnessMap,
-        roughness: 1,
-        aoMap: mat.aoMap,
-        sheen: 1,
-        sheenRoughness: 0.55,
-        sheenColor: new THREE.Color(0x585b63),
-        side: THREE.FrontSide,
-      });
-      if (mat.map) {
-        m.map = mat.map;
-        // desaturate the beige scan towards neutral by tinting
+    // Detail textures LISA keeps on hidden "Maps" planes
+    const mapsMat = (name) => root.getObjectByName(name)?.material;
+    const lightmap = mapsMat('Glitter004')?.map;
+    if (lightmap) lightmap.channel = 1;
+    const tiled = (tex, n) => {
+      if (!tex) return null;
+      const t = tex.clone();
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(n, n);
+      t.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+      t.needsUpdate = true;
+      return t;
+    };
+    const fabricNormal = tiled(mapsMat('Glitter003')?.normalMap, 5);
+    const poresNormal = tiled(mapsMat('Glitter001')?.normalMap, 20);
+
+    // Baked lighting: multiply the lightmap (uv1) into the indirect diffuse, like LISA's PBR shader.
+    const bake = (mat, { intensity = 0.8, backfaceDim = false } = {}) => {
+      if (!lightmap || !mat.aoMap) return mat;
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.tBake = { value: lightmap };
+        shader.uniforms.uBakeIntensity = { value: intensity };
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <aomap_pars_fragment>', '#include <aomap_pars_fragment>\nuniform sampler2D tBake;\nuniform float uBakeIntensity;')
+          .replace(
+            '#include <aomap_fragment>',
+            '#include <aomap_fragment>\nreflectedLight.indirectDiffuse *= mix(vec3(1.0), texture2D(tBake, vAoMapUv).rgb, uBakeIntensity);'
+          );
+        if (backfaceDim) {
+          shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <opaque_fragment>',
+            'outgoingLight *= min(1.0 + 0.8 * faceDirection, 1.0);\n#include <opaque_fragment>'
+          );
+        }
+      };
+      mat.customProgramCacheKey = () => `bake-${backfaceDim}`;
+      mat.needsUpdate = true;
+      return mat;
+    };
+
+    // Charcoal rib-knit turtleneck (LISA's fabric setup, darker yarn)
+    byName.Cloth?.forEach(({ mat }) => {
+      mat.color = new THREE.Color(0x545b57);
+      mat.envMapIntensity = 2;
+      mat.side = THREE.DoubleSide;
+      if (fabricNormal) {
+        mat.normalMap = fabricNormal;
+        mat.normalScale = new THREE.Vector2(2.5, 2.5 * Math.sign(mat.normalScale?.y || 1));
       }
-      mesh.material = m;
+      bake(mat, { backfaceDim: true });
     });
 
-    // Skin: slightly deeper, warmer tone, a touch rougher
+    // Skin: pore-level normal detail
     byName.Skin?.forEach(({ mat }) => {
-      mat.color = new THREE.Color(0xc4ab9c);
-      mat.roughness = 0.52;
+      mat.color = new THREE.Color(0xe6dcd6); // calm the warm diffuse a touch
+      mat.roughness = 0.42;
+      mat.envMapIntensity = 1;
+      if (poresNormal) {
+        mat.normalMap = poresNormal;
+        mat.normalScale = new THREE.Vector2(1, Math.sign(mat.normalScale?.y || 1));
+      }
+      bake(mat);
     });
 
-    // TV shell: graphite with a satin finish
+    // TV: glossy graphite shell instead of LISA's cream plastic
     byName.light_grey?.forEach(({ mat }) => {
-      mat.color = new THREE.Color(0x38383b);
-      mat.metalness = 0.45;
-      mat.roughness = 0.3;
-      mat.envMapIntensity = 1.15;
+      mat.color = new THREE.Color(0x1d1d20);
+      bake(mat);
     });
-    byName.plastic_black?.forEach(({ mat }) => {
-      mat.color = new THREE.Color(0x0b0b0d);
-      mat.roughness = 0.42;
-    });
-    byName.chrome?.forEach(({ mat }) => {
-      mat.color = new THREE.Color(0x8a6a48); // brushed bronze trim
-      mat.metalness = 1;
-      mat.roughness = 0.22;
-    });
+    byName.plastic_black?.forEach(({ mat }) => bake(mat));
+    byName.chrome?.forEach(({ mat }) => bake(mat));
 
     // LED strip: emissive map we paint with the progress
     this.ledCanvas = document.createElement('canvas');
@@ -270,16 +312,7 @@ export class JackScene {
         emissiveIntensity: 2.4,
       });
     });
-    byName['Lights.001']?.forEach(({ mesh }) => {
-      mesh.material = new THREE.MeshBasicMaterial({
-        map: this.ledTex,
-        transparent: true,
-        opacity: 0.16,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        toneMapped: false,
-      });
-    });
+    byName['Lights.001']?.forEach(({ mesh }) => (mesh.visible = false));
 
     // CRT screen
     byName.Screen?.forEach(({ mesh }) => {
@@ -313,7 +346,7 @@ export class JackScene {
       const pulse = i === lit - 1 ? 0.75 + 0.25 * Math.sin(t * 4) : 1;
       if (!on) continue;
       c.fillStyle = `rgba(255, 150, 60, ${pulse})`;
-      c.fillRect((i / n + 0.35 / n) * w, 0, (0.3 / n) * w, 4);
+      c.fillRect((i / n + 0.12 / n) * w, 0, (0.76 / n) * w, 4);
     }
     this.ledTex.needsUpdate = true;
   }

@@ -55,7 +55,7 @@ export function createAgent(market, ticker) {
 export function createChartCanvas(ticker) {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
-  canvas.height = 400;
+  canvas.height = 466;
   const ctx = canvas.getContext('2d');
 
   function draw(state) {
@@ -120,7 +120,7 @@ export function createChartCanvas(ticker) {
 export function createTerminalCanvas(ticker) {
   const canvas = document.createElement('canvas');
   canvas.width = 640;
-  canvas.height = 500;
+  canvas.height = 584;
   const ctx = canvas.getContext('2d');
   const lines = [];
 

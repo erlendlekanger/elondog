@@ -20,8 +20,8 @@ import { createCables } from './cables.js';
 // CONFIG: change these to make the site yours.
 // ---------------------------------------------------------------------------
 const CONFIG = {
-  name: 'TV/HEAD',
-  ticker: '$TVHEAD',
+  name: 'JACK',
+  ticker: '$JACK',
   accent: '#ff3a22',     // normal colour
   pumpColor: '#39ff88',  // when the chart is going up
   dumpColor: '#ff1d1d',  // when the chart is going down
@@ -37,6 +37,9 @@ const CONFIG = {
   // Path to your own rigged model, e.g. 'models/me.glb'. Leave null to use the
   // built-in TV-head character. See README.md for how to make one.
   modelUrl: 'models/tvhead.glb',
+  // Extra models you can pick with ?model=name, e.g.
+  // { url: 'models/other.glb', offsetY: -0.55, scale: 1, hide: ['NodeName'], flipScreenUV: true }
+  models: {},
   // Your own clips for the TV, e.g. ['videos/face.mp4', 'videos/dance.mp4'] (muted, looped).
   // Great place for Higgsfield / phone videos. They appear as channels with CRT effects.
   screenVideos: [],
@@ -87,8 +90,8 @@ new RGBELoader().load('assets/studio.hdr', (hdr) => {
 });
 
 const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 60);
-const cameraBase = new THREE.Vector3(0, 1.1, 8.4);
-const cameraTarget = new THREE.Vector3(0, 0.88, 0);
+const cameraBase = new THREE.Vector3(0, 0.75, 9.8);
+const cameraTarget = new THREE.Vector3(0, 0.38, 0);
 
 // Backdrop: soft radial glow behind the head, fading to black.
 const accent = new THREE.Color(CONFIG.accent);
@@ -149,7 +152,7 @@ scene.add(screenLight);
 // ---------------------------------------------------------------------------
 // Character
 // ---------------------------------------------------------------------------
-const screen = createScreen(renderer, { color: CONFIG.accent, aspect: 1.02 / 0.8 });
+const screen = createScreen(renderer, { color: CONFIG.accent, aspect: 1.14 / 1.04 });
 const character = buildCharacter(CONFIG.accent, { brand: CONFIG.name, chestText: CONFIG.ticker, screenMaterial: screen.material });
 character.root.position.y = -0.55;
 scene.add(character.root);
@@ -168,6 +171,8 @@ function captureRest(r) {
 let rest = captureRest(rig);
 
 // Optional: swap in a rigged .glb.
+let modelOffsetY = -0.55;
+let preset = {};
 async function loadCustomModel(url) {
   const loader = new GLTFLoader();
   const draco = new DRACOLoader();
@@ -175,6 +180,10 @@ async function loadCustomModel(url) {
   loader.setDRACOLoader(draco);
   const gltf = await loader.loadAsync(url);
   const model = gltf.scene;
+  for (const name of preset.hide || []) {
+    const o = model.getObjectByName(name);
+    if (o) o.visible = false;
+  }
   const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const find = (names) => {
     let hit = null;
@@ -197,12 +206,14 @@ async function loadCustomModel(url) {
     if (mats.some((mm) => mm && mm.name === 'Screen')) {
       // glTF UVs start at the top; the face shader expects v = 0 at the bottom.
       const uv = o.geometry.attributes.uv;
-      for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
+      if (preset.flipScreenUV !== false) for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
       uv.needsUpdate = true;
       o.material = screenMat;
     }
   });
-  model.position.y = character.root.position.y;
+  modelOffsetY = preset.offsetY ?? -0.55;
+  model.position.y = modelOffsetY;
+  model.scale.setScalar(preset.scale ?? 1);
   character.root.visible = false;
   scene.add(model);
   rig = { torso, neck1, neck2, head };
@@ -215,14 +226,21 @@ async function loadCustomModel(url) {
     antennas = pivots.map((o, i) => ({ arm: o, baseZ: o.rotation.z, baseX: o.rotation.x, side: i ? 1 : -1 }));
   }
   screenLightAnchor = find(['screenlight']) || head;
-  if (find(['c0a'])) {
+  if (model.getObjectByName('c0_a')) {
     cables = createCables(model, CONFIG.accent);
     scene.add(cables.group);
+  }
+  for (const [key, name] of [['cableStart', 'cablelstart'], ['cableEnd', 'cablelend'], ['shoulderL', 'shoulderl'], ['shoulderR', 'shoulderr']]) {
+    const o = find([name]);
+    if (!o) continue;
+    extraBones[key] = o;
+    extraBones.rest[key] = key.startsWith('cable') ? o.rotation.z : o.rotation.y;
   }
   const sweater = find(['sweater']);
   if (sweater && CONFIG.ticker) addChestDecal(sweater, CONFIG.ticker, CONFIG.accent);
   customModel = model;
 }
+const extraBones = { rest: {} };
 let antennas = character.antennas;
 let screenLightAnchor = character.screenLightAnchor;
 let headRestY = character.rig.head.position.y;
@@ -653,7 +671,7 @@ function resize() {
   finish.uniforms.uRes.value.set(w, h);
   camera.aspect = w / h;
   // Pull back on tall screens so the whole head fits.
-  cameraBase.z = w / h < 0.8 ? 12.8 : w / h < 1.2 ? 10.2 : 8.4;
+  cameraBase.z = w / h < 0.8 ? 14.5 : w / h < 1.2 ? 11.6 : 9.8;
   camera.updateProjectionMatrix();
 }
 window.addEventListener('resize', resize);
@@ -668,7 +686,6 @@ const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.V
 const antennaState = [{ x: 0, v: 0 }, { x: 0, v: 0 }];
 let prevHeadY = 0;
 const clock = new THREE.Clock();
-const neckA = new THREE.Vector3(), neckB = new THREE.Vector3();
 
 function updateCables(lag) {
   for (const c of character.cables) {
@@ -719,7 +736,13 @@ function tick() {
   neck2.rotation.y = rest.neck2.y;
 
   // Breathing.
-  (customModel || character.root).position.y = -0.55 + Math.sin(t * 1.3) * 0.008;
+  if (customModel) customModel.position.y = modelOffsetY + Math.sin(t * 1.3) * 0.008;
+  else character.root.position.y = -0.55 + Math.sin(t * 1.3) * 0.008;
+  // Rigged cable bones and shoulders, if the model has them (like L.I.S.A.).
+  if (extraBones.cableStart) extraBones.cableStart.rotation.z = extraBones.rest.cableStart + range(fast.x - mid.x, 0.5, -0.5);
+  if (extraBones.cableEnd) extraBones.cableEnd.rotation.z = extraBones.rest.cableEnd + range(mid.x - slow.x, 0.5, -0.5);
+  if (extraBones.shoulderL) extraBones.shoulderL.rotation.y = extraBones.rest.shoulderL + 0.02 * Math.sin(t * 1.2);
+  if (extraBones.shoulderR) extraBones.shoulderR.rotation.y = extraBones.rest.shoulderR - 0.02 * Math.sin(t * 1.2);
   rig.head.position.y = headRestY + additive.headY;
 
   // Antennas: damped springs driven by head velocity.
@@ -754,7 +777,7 @@ function tick() {
   backdrop.material.uniforms.uTime.value = t;
   finish.uniforms.uTime.value = t;
   if (onChannel === 'terminal') { terminal.draw(t); terminalTexture.needsUpdate = true; }
-  if (cables) cables.step(dt, rig.neck1.getWorldPosition(neckA), rig.head.getWorldPosition(neckB), 0.235);
+  if (cables) cables.step(dt);
   U.uDecay.value = Math.pow(0.8, dt * 60); // phosphor fade, frame-rate independent
   screen.update();
   composer.render();
@@ -773,8 +796,17 @@ setupHeader();
 document.documentElement.style.setProperty('--accent', CONFIG.accent);
 
 (async () => {
-  if (CONFIG.modelUrl) {
-    try { await loadCustomModel(CONFIG.modelUrl); } catch (err) { console.warn('[tvhead] Kunne ikke laste modell:', err); }
+  const pick = new URLSearchParams(location.search).get('model');
+  preset = (pick && CONFIG.models[pick]) || {};
+  const url = preset.url || CONFIG.modelUrl;
+  if (url) {
+    try { await loadCustomModel(url); } catch (err) {
+      console.warn('[tvhead] Could not load model:', url, err);
+      if (preset.url && CONFIG.modelUrl) {
+        preset = {};
+        try { await loadCustomModel(CONFIG.modelUrl); } catch (e) { console.warn(e); }
+      }
+    }
   }
   await document.fonts?.ready;
   tick();

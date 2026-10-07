@@ -8,7 +8,7 @@
 //                 and the classic power-on/off line.
 import * as THREE from 'three';
 
-const W = 640, H = 500;
+const W = 640, H = 584;
 
 const quadVertex = /* glsl */ `
 varying vec2 vUv;

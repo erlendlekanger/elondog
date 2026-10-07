@@ -1,4 +1,4 @@
-# TV/HEAD
+# JACK
 
 En interaktiv 3D-figur med TV-hode som følger musen, inspirert av hvordan
 [L.I.S.A. fra Locomotive](https://lisa.locomotive.ca/en) er bygget: Three.js,
@@ -59,28 +59,28 @@ npx http-server .
 
 ## 3D-modellen (`models/tvhead.glb`)
 
-Figuren er en ekte 3D-modell laget i **Blender med kode**: `tools/build_model.py`.
-Skriptet lager:
-- **menneskehals** med hud, porer, halsmuskler, adamseple og skjelett, slik at huden bøyer seg mykt når hodet snur
-- **plugger og kontakter** under TV-en og i halsen, der ledningene går inn
-- genser med folder, ribbestrikket krage og en CRT-TV med avrundede kanter, knotter, høyttaler, merke og antenner
-- innbakte myke skygger (ambient occlusion) med Cycles
+Jack bygges i **Blender med kode**: `tools/build_model.py`.
+- **Kroppen** er Blender Studios realistiske mannlige base mesh («Human Base Meshes»,
+  © Blender Foundation, CC BY 4.0). Den kuttes til en byste, og en tettsittende
+  lysegrå ribbestrikket genser legges over den, så bryst og skuldre synes gjennom.
+- **Turtleneck** med uregelmessige folder, og en stripe ekte hud under monitoren.
+- **Kvadratisk beige retro-monitor** med ventilasjonsriller, svarte øreskiver og en liten lampe.
+- Skjelett (`torso → neck1 → neck2 → head`) og innbakte myke skygger (ambient occlusion).
 
-Lag modellen på nytt etter endringer i skriptet:
+Lag modellen på nytt (skriptet laster ned kroppen automatisk første gang):
 
 ```bash
 blender -b -P tools/build_model.py
-# med eget TV-merke og egen hudfarge:
-TVHEAD_BRAND="DITTNAVN" TVHEAD_SKIN="#8d5a3b" blender -b -P tools/build_model.py
+# andre farger:
+TVHEAD_KNIT="#2b2b2e" TVHEAD_SKIN="#8d5a3b" TVHEAD_BRAND="JACK" blender -b -P tools/build_model.py
 ```
-
-Siden laster `models/tvhead.glb` automatisk. Hvis filen mangler, brukes den innebygde figuren i `src/character.js`.
 
 ## Ledningene
 
-Ledningene er ikke en del av modellen. De simuleres live i nettleseren (`src/cables.js`) som tau med
-tyngdekraft, treghet og kollisjon mot halsen. Siden finner endepunktene i modellen (`c0_a` … `c6_b`),
-så du kan flytte pluggene i Blender-skriptet (`CABLES`-lista).
+De tynne ledningene er ikke en del av modellen. De simuleres live i nettleseren (`src/cables.js`):
+tyngdekraft, treghet, en liten «krøll» som ekte ledninger har, og kollisjon mot bryst, skuldre og hals
+(kuler som heter `col_*` i modellen). Noen er festet på genseren, andre henger fritt med en jack-plugg.
+Endepunktene (`c0_a` … `c6_b`) settes i `build_cable_anchors` i Blender-skriptet.
 
 ## Skjermen
 
@@ -112,3 +112,8 @@ eller filmet med mobilen. De vises med full CRT-effekt og byttes inn som egne ka
 
 Hvis beina ikke blir funnet, står det en advarsel i nettleserkonsollen (F12),
 og den innebygde figuren brukes i stedet.
+
+## Kreditering
+
+3D-kroppen er basert på «Human Base Meshes» fra Blender Studio, © Blender Foundation, CC BY 4.0
+(https://www.blender.org/download/demo-files/). Studiolyset er fra Poly Haven (CC0).

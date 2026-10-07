@@ -18,10 +18,12 @@
 <main id="top">
   <!-- 1. hero: the vault film -->
   <section class="hero">
-    <video class="hero-video" autoplay muted loop playsinline preload="auto">
+    <!-- intro plays once and holds its last frame; hero-loop.mp4, if present, takes over on repeat -->
+    <video class="hero-video" id="hero-intro" autoplay muted playsinline preload="auto">
       <source src="assets/hero.webm" type="video/webm">
       <source src="assets/hero.mp4" type="video/mp4">
     </video>
+    <video class="hero-video" id="hero-loop" muted loop playsinline preload="none" hidden></video>
     <div class="hero-shade"></div>
     <div class="hero-copy">
       <h1>Built for<br>the fomo family</h1>

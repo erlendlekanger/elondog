@@ -261,6 +261,20 @@ cTL.to(CS, { progress: 1, ease: "none", duration: 1 }, 0)
   .to(".card-header", { opacity: 1, yPercent: 0, filter: "blur(0px)", duration: 0.2 }, 0.4)
   .fromTo(CS, { tubeAlpha: 0 }, { tubeAlpha: 1, duration: 0.2, ease: "none" }, 0.075);
 
+// ============================================================ HERO FILM
+// intro once, then the seamless loop clip if one has been uploaded
+const intro = document.getElementById("hero-intro");
+const heroLoop = document.getElementById("hero-loop");
+fetch("assets/hero-loop.mp4", { method: "HEAD" }).then((r) => {
+  if (!r.ok) return;
+  heroLoop.src = "assets/hero-loop.mp4";
+  heroLoop.preload = "auto";
+  intro.addEventListener("ended", () => {
+    heroLoop.hidden = false;
+    heroLoop.play().then(() => (intro.hidden = true)).catch(() => {});
+  });
+}).catch(() => {});
+
 // ============================================================ LOOP
 function sizeOf(canvas) {
   const b = canvas.getBoundingClientRect();

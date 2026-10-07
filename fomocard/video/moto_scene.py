@@ -160,7 +160,7 @@ def card_face_mat(name, path):
 
 
 # ---------------------------------------------------------------- materials
-rock = rock_mat("rock", 0.055)
+rock = rock_mat("rock", 0.04)
 rubble_m = rock_mat("rubble", 0.22)
 
 black_satin, nt, b = node_mat("black_satin")
@@ -174,9 +174,9 @@ b.inputs["Roughness"].default_value = 0.85
 b.inputs["Specular IOR Level"].default_value = 0.15
 
 slab_top, nt, b = node_mat("slab_top")             # brushed aluminium
-b.inputs["Base Color"].default_value = (0.5, 0.51, 0.53, 1)
+b.inputs["Base Color"].default_value = (0.36, 0.37, 0.39, 1)
 b.inputs["Metallic"].default_value = 1.0
-b.inputs["Roughness"].default_value = 0.3
+b.inputs["Roughness"].default_value = 0.34
 b.inputs["Anisotropic"].default_value = 0.8
 slab_side, nt, b = node_mat("slab_side")
 b.inputs["Base Color"].default_value = (0.04, 0.04, 0.045, 1)
@@ -294,7 +294,15 @@ glint.visible_diffuse = False
 glint.visible_camera = False
 
 
-def glint_sweep(f0, f1, energy=900):
+# the glint only touches the plinth and the card, never the room
+recv = bpy.data.collections.new("glint_receivers")
+scene.collection.children.link(recv)
+for name in ("slab", "column", "acrylic", "card_body", "card_front", "card_back"):
+    recv.objects.link(bpy.data.objects[name])
+glint.light_linking.receiver_collection = recv
+
+
+def glint_sweep(f0, f1, energy=75):
     """slide the strip from left to right, in front of and above the plinth"""
     for f, x, e in [(f0 - 1, -3.2, 0), (f0, -3.2, energy), (f1, 3.2, energy), (f1 + 1, 3.2, 0)]:
         glint.location = (x, -1.8, 2.6)
@@ -315,7 +323,7 @@ cam.data.sensor_width = 36
 cam.data.dof.use_dof = True
 cam.data.dof.focus_object = front
 cam.data.dof.aperture_fstop = 5.6
-END = dict(loc=(0, -3.25, TOP + 0.4), tz=TOP + 0.25, lens=50)
+END = dict(loc=(0, -3.0, TOP + 0.36), tz=TOP + 0.25, lens=50)
 
 
 def cam_key(f, loc, tz, lens):
@@ -325,18 +333,19 @@ def cam_key(f, loc, tz, lens):
     cam.data.keyframe_insert("lens", frame=f)
 
 
-KEY_E, BOX_E, GRAZE_E, INNER_E, RIM_E = 300, 9.0, 22, 0.9, 320
+KEY_E, BOX_E, GRAZE_E, INNER_E, RIM_E = 170, 9.0, 10, 0.45, 190
 if args.mode == "intro":
     # straight push-in that settles, the light box fading on at the start
-    cam_key(1, (0, -14.0, 1.3), 2.4, 40)
-    cam_key(70, (0, -9.0, 1.15), 1.7, 45)
-    cam_key(150, (0, -5.2, TOP + 0.38), 1.5, 50)
+    cam_key(1, (0, -14.0, 1.3), 2.5, 40)
+    cam_key(26, (0, -9.5, 1.3), 2.45, 40)
+    cam_key(80, (0, -6.4, 1.2), 1.65, 45)
+    cam_key(160, (0, -4.3, TOP + 0.36), 1.42, 50)
     cam_key(INTRO_LEN, END["loc"], END["tz"], END["lens"])
-    for f, k in [(1, 0.12), (12, 0.25), (40, 1.0)]:
+    for f, k in [(1, 0.03), (10, 0.12), (36, 1.0)]:
         key.data.energy, panel_strength.default_value, graze.data.energy = KEY_E * k, BOX_E * k, GRAZE_E * k
         inner_glow.default_value = INNER_E * k
         inner_glow.keyframe_insert("default_value", frame=f)
-        rimL.data.energy = RIM_E * k
+        rimL.data.energy = RIM_E * k * k        # the rock reveals a little later than the box
         rimL.data.keyframe_insert("energy", frame=f)
         key.data.keyframe_insert("energy", frame=f)
         panel_strength.keyframe_insert("default_value", frame=f)

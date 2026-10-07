@@ -39,8 +39,8 @@ p { color: var(--muted); font-size: 15px; line-height: 1.45; }
 .earth-points li { position: absolute; left: var(--x); top: var(--y); font-size: 12px; color: #d8dce4; padding: 6px 10px; border-radius: 999px; background: rgba(20,20,24,.55); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(6px); white-space: nowrap; }
 .earth-points li::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #fff; margin-right: 8px; vertical-align: 1px; box-shadow: 0 0 10px #fff; }
 
-/* card: a black 2.5-screen panel that slides over the pinned earth */
-.card { position: relative; z-index: 2; height: 250vh; background: var(--bg); }
+/* card: transparent, so the card rises through the pinned earth */
+.card { position: relative; z-index: 2; height: 250vh; }
 .card-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 .card-header { position: absolute; left: 0; right: 0; bottom: 5vh; text-align: center; display: grid; gap: 22px; justify-items: center; padding: 0 16px; }
 

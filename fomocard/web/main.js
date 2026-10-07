@@ -1,8 +1,8 @@
 // FOMOCARD landing, two WebGL scenes laid out like moto-card.com:
 //   .earth  pinned for 2.5 screens (no pin spacing), so the next section slides over it.
 //           The night-side globe turns, shrinks and fades as it scrolls.
-//   .card   a black 2.5-screen section that slides up over the earth. Its canvas sticks
-//           to the viewport; the card rises in, turns 1.5 times to face you, and a tube
+//   .card   a transparent 2.5-screen section that scrolls up over the earth. Its canvas
+//           sticks to the viewport; the card rises in, turns 1.5 times to face you, and a tube
 //           of shop gift cards circles it and travels upward with the scroll.
 // Timings follow moto-card.com's own ScrollTrigger settings, in viewport heights.
 import * as THREE from "three";
@@ -20,10 +20,10 @@ addEventListener("pointermove", (e) => {
   mouse.y = e.clientY / innerHeight - 0.5;
 });
 
-function makeRenderer(canvas, exposure) {
-  const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+function makeRenderer(canvas, exposure, transparent = false) {
+  const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: transparent, premultipliedAlpha: true });
   r.setPixelRatio(DPR);
-  r.setClearColor(0x080808, 1);
+  r.setClearColor(0x080808, transparent ? 0 : 1);
   r.toneMapping = THREE.ACESFilmicToneMapping;
   r.toneMappingExposure = exposure;
   return r;
@@ -114,7 +114,8 @@ const ES = { rotY: -Math.PI / 1.4, scale: EARTH_SCALE };
 
 // ============================================================ CARD + TUBE
 const cardCanvas = document.getElementById("card-canvas");
-const cR = makeRenderer(cardCanvas, 1.0);
+// transparent: the card rises through the planet, which stays visible underneath
+const cR = makeRenderer(cardCanvas, 1.0, true);
 const cScene = new THREE.Scene();
 const cCam = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
 cCam.position.set(0, 0, 6.5);
@@ -172,7 +173,16 @@ function faceGeometry() {
   for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + CARD_W / 2) / CARD_W, (p.getY(i) + CARD_H / 2) / CARD_H);
   return g;
 }
-const faceMat = (url) => new THREE.MeshPhysicalMaterial({ map: tex(cR, url), metalness: 0.75, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 1.6 });
+// the print doubles as a bump map: logo and text sit engraved in the metal and catch
+// the light on their edges, like a laser-etched metal card
+const faceMat = (url) => {
+  const bump = tex(cR, url, false);
+  return new THREE.MeshPhysicalMaterial({
+    map: tex(cR, url), bumpMap: bump, bumpScale: -2.2,
+    metalness: 0.8, roughness: 0.26, clearcoat: 0.6, clearcoatRoughness: 0.08,
+    clearcoatNormalMap: null, envMapIntensity: 1.6,
+  });
+};
 const cardFrontMat = faceMat("assets/card_front.png");
 const cardBackMat = faceMat("assets/card_back.png");
 const cardBodyMat = new THREE.MeshPhysicalMaterial({ color: 0x0c0c0e, metalness: 0.9, roughness: 0.3 });
@@ -234,8 +244,9 @@ const eTL = gsap.timeline({
 });
 eTL.fromTo(ES, { rotY: -Math.PI / 1.4 }, { rotY: -Math.PI / 5, ease: "none", duration: 0.5 }, 0)
   .fromTo(ES, { scale: EARTH_SCALE }, { scale: 0.4 * EARTH_SCALE, duration: 0.9, ease: "power2.out" }, 0.1)
-  .fromTo(eU.uOpacity, { value: 1 }, { value: 0, duration: 0.25, ease: "power1.in" }, 0.3)
-  .to(".earth-header", { yPercent: -120, ease: "none", duration: 0.5 }, 0)
+  .fromTo(eU.uOpacity, { value: 1 }, { value: 0, duration: 0.15, ease: "power2.out" }, 0.2)
+  // slide the heading fully out of view, as moto's does, whatever its height
+  .to(".earth-header", { y: () => { const h = document.querySelector(".earth-header"); return -(h.offsetTop + h.offsetHeight + 24); }, ease: "none", duration: 0.5 }, 0)
   .to(".earth-points li", { autoAlpha: 0, y: 24, duration: 0.25, stagger: { amount: 0.2, from: "random" }, ease: "none" }, 0)
   .set({}, {}, 1);
 

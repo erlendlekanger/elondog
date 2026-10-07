@@ -19,6 +19,8 @@ Ingen byggesteg. Alt er vanlige filer som Vercel serverer direkte.
 | `src/market.js` | Kursdata fra DexScreener (eller demo) |
 | `src/agent.js` | Agent-feeden, humør og chartet på TV-skjermen |
 | `assets/studio.hdr` | Studiolys for refleksjoner (Poly Haven, CC0) |
+| `models/tvhead.glb` | 3D-modellen (laget av `tools/build_model.py`) |
+| `tools/build_model.py` | Blender-skriptet som bygger modellen |
 | `src/style.css` | Utseende på tekst og knapper |
 
 ## Endre ting raskt
@@ -53,17 +55,36 @@ npx http-server .
 # åpne http://localhost:8080
 ```
 
-## Bytte til din egen 3D-figur (som Lisa)
+## 3D-modellen (`models/tvhead.glb`)
+
+Figuren er en ekte 3D-modell laget i **Blender med kode**: `tools/build_model.py`.
+Skriptet lager genser med folder, ribbestrikket krage, segmentert nakke, CRT-TV med
+avrundede kanter, knotter, høyttaler, antenner og kabler. Det legger også på skjelett
+(`torso → neck1 → neck2 → head`) og baker inn myke skygger (ambient occlusion) med Cycles.
+
+Lag modellen på nytt etter endringer i skriptet:
+
+```bash
+blender -b -P tools/build_model.py
+# eller med navn på TV-merket:
+TVHEAD_BRAND="DITTNAVN" blender -b -P tools/build_model.py
+```
+
+Siden laster `models/tvhead.glb` automatisk. Hvis filen mangler, brukes den innebygde figuren i `src/character.js`.
+
+## Bytte til en helt annen 3D-figur
 
 1. **Lag modellen.** Lær Blender gratis (søk «Blender Guru donut tutorial» på YouTube),
    eller start med en AI-generator som Meshy.ai, Tripo3d.ai eller Hyper3D Rodin og rydd opp i Blender.
 2. **Rigg den.** Last opp kroppen til Mixamo.com (gratis) for automatisk skjelett,
-   eller lag bein selv i Blender som heter `torso`, `neck1` og `neck2`.
+   eller lag bein selv i Blender som heter `torso`, `neck1`, `neck2` og `head`.
 3. **Skjermen.** Gi TV-skjermflaten et materiale som heter nøyaktig `Screen`.
    Da legger siden ansikts-shaderen på den automatisk.
-4. **Kvalitet.** Bak lys (AO/lightmap) i Blender, slik Lisa gjør, og hold filen under ~5 MB.
-5. **Eksporter** som `.glb` (File → Export → glTF 2.0, gjerne med Draco-komprimering).
-6. Legg filen i `models/` og sett `modelUrl: 'models/dinfil.glb'` i `CONFIG`.
+4. **Ekstra (valgfritt).** Tomme objekter som heter `antenna_L` og `antenna_R` svinger etter hodet,
+   og et som heter `ScreenLight` bestemmer hvor lyset fra skjermen kommer fra. Et objekt som heter `Sweater` får tickeren brodert på brystet.
+5. **Kvalitet.** Bak lys (AO/lightmap) i Blender og hold filen under ~5 MB.
+6. **Eksporter** som `.glb` (File → Export → glTF 2.0, gjerne med Draco-komprimering).
+7. Legg filen i `models/` og sett `modelUrl: 'models/dinfil.glb'` i `CONFIG`.
 
 Hvis beina ikke blir funnet, står det en advarsel i nettleserkonsollen (F12),
 og den innebygde figuren brukes i stedet.

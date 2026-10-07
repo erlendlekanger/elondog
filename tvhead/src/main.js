@@ -10,7 +10,7 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import gsap from 'gsap';
-import { buildCharacter } from './character.js';
+import { buildCharacter, addChestDecal } from './character.js';
 import { createMarket, formatPrice, formatUsd, formatPct } from './market.js';
 import { createAgent, createChartCanvas, moodFrom } from './agent.js';
 
@@ -34,12 +34,13 @@ const CONFIG = {
   },
   // Path to your own rigged model, e.g. 'models/me.glb'. Leave null to use the
   // built-in TV-head character. See README.md for how to make one.
-  modelUrl: null,
+  modelUrl: 'models/tvhead.glb',
   // Bone names searched for in your model (case and symbols are ignored).
   bones: {
     torso: ['torso', 'spine2', 'mixamorigspine2', 'chest', 'spine1'],
     neck1: ['neck1', 'neck', 'mixamorigneck'],
     neck2: ['neck2', 'head', 'mixamorighead'],
+    head: ['head', 'mixamorighead'],
   },
 };
 
@@ -176,22 +177,44 @@ async function loadCustomModel(url) {
   const torso = find(CONFIG.bones.torso);
   const neck1 = find(CONFIG.bones.neck1);
   const neck2 = find(CONFIG.bones.neck2) || neck1;
+  const head = find(CONFIG.bones.head) || neck2;
   if (!torso || !neck1) {
-    console.warn('[tvhead] Fant ikke bein med navnene i CONFIG.bones – bruker innebygd figur.');
+    console.warn('[tvhead] No bones matching CONFIG.bones found, using the built-in character.');
     return;
   }
   model.traverse((o) => {
     if (!o.isMesh) return;
     o.castShadow = o.receiveShadow = true;
+    if (o.isSkinnedMesh) o.frustumCulled = false;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
-    if (mats.some((mm) => mm && mm.name === 'Screen')) o.material = screenMat;
+    if (mats.some((mm) => mm && mm.name === 'Screen')) {
+      // glTF UVs start at the top; the face shader expects v = 0 at the bottom.
+      const uv = o.geometry.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
+      uv.needsUpdate = true;
+      o.material = screenMat;
+    }
   });
+  model.position.y = character.root.position.y;
   character.root.visible = false;
   scene.add(model);
-  rig = { torso, neck1, neck2, head: neck2 };
+  rig = { torso, neck1, neck2, head };
   rest = captureRest(rig);
+  headRestY = head.position.y;
+
+  // Optional extras the site animates if the model has them.
+  const pivots = ['antennal', 'antennar'].map((n) => find([n])).filter(Boolean);
+  if (pivots.length) {
+    antennas = pivots.map((o, i) => ({ arm: o, baseZ: o.rotation.z, baseX: o.rotation.x, side: i ? 1 : -1 }));
+  }
+  screenLightAnchor = find(['screenlight']) || head;
+  const sweater = find(['sweater']);
+  if (sweater && CONFIG.ticker) addChestDecal(sweater, CONFIG.ticker, CONFIG.accent);
   customModel = model;
 }
+let antennas = character.antennas;
+let screenLightAnchor = character.screenLightAnchor;
+let headRestY = character.rig.head.position.y;
 let customModel = null;
 
 // ---------------------------------------------------------------------------
@@ -351,7 +374,7 @@ const raycaster = new THREE.Raycaster();
 function hitsTV(x, y) {
   const p = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
   raycaster.setFromCamera(p, camera);
-  const target = customModel || character.tv;
+  const target = customModel ? rig.head : character.tv;
   return raycaster.intersectObject(target, true).length > 0;
 }
 
@@ -589,7 +612,7 @@ resize();
 const damp = (cur, target, lambda, dt) => cur + (target - cur) * (1 - Math.exp(-lambda * dt));
 const range = (v, a, b) => THREE.MathUtils.lerp(a, b, THREE.MathUtils.smoothstep(v, -1, 1));
 const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3();
-const antennaState = character.antennas.map(() => ({ x: 0, v: 0 }));
+const antennaState = [{ x: 0, v: 0 }, { x: 0, v: 0 }];
 let prevHeadY = 0;
 const clock = new THREE.Clock();
 
@@ -642,15 +665,13 @@ function tick() {
   neck2.rotation.y = rest.neck2.y;
 
   // Breathing.
-  if (!customModel) {
-    character.root.position.y = -0.55 + Math.sin(t * 1.3) * 0.008;
-    character.rig.head.position.y = 0.18 + additive.headY;
-  }
+  (customModel || character.root).position.y = -0.55 + Math.sin(t * 1.3) * 0.008;
+  rig.head.position.y = headRestY + additive.headY;
 
   // Antennas: damped springs driven by head velocity.
   const headVel = (neck1.rotation.y - prevHeadY) / Math.max(dt, 1e-4);
   prevHeadY = neck1.rotation.y;
-  character.antennas.forEach((a, i) => {
+  antennas.forEach((a, i) => {
     const s = antennaState[i];
     s.v += (-55 * s.x - 5 * s.v - headVel * 0.9) * dt;
     s.x += s.v * dt;
@@ -669,7 +690,7 @@ function tick() {
   if (!customModel) updateCables(tmpC.set(fast.x - slow.x, fast.y - slow.y, 0).clone());
 
   // Screen light follows the TV and flickers with the picture.
-  character.screenLightAnchor.getWorldPosition(screenLight.position);
+  screenLightAnchor.getWorldPosition(screenLight.position);
   screenLight.intensity = (1.3 + Math.sin(t * 50) * 0.05 + U.uStatic.value * 1.5) * (U.uPower.value / 3.2);
 
   // Camera parallax.
@@ -686,7 +707,7 @@ function tick() {
 // Boot
 // ---------------------------------------------------------------------------
 // ?debug exposes internals for automated screenshots.
-if (new URLSearchParams(location.search).has('debug')) window.__tvhead = { gsap, U, mouse, character, camera, market };
+if (new URLSearchParams(location.search).has('debug')) window.__tvhead = { gsap, U, mouse, character, camera, market, scene };
 
 document.title = CONFIG.name;
 document.querySelector('[data-brand]').textContent = CONFIG.name;

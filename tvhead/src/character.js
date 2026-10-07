@@ -140,24 +140,7 @@ function buildTorso(m, chestText, accent) {
   torso.add(bodyMesh);
 
   // Embroidered ticker on the chest, projected onto the sweater.
-  if (chestText) {
-    bodyMesh.updateMatrixWorld(true);
-    const decalGeo = new DecalGeometry(bodyMesh, new THREE.Vector3(0.44, -0.4, 0.55), new THREE.Euler(-0.12, 0.24, 0), new THREE.Vector3(0.5, 0.125, 0.5));
-    const decal = new THREE.Mesh(decalGeo, new THREE.MeshPhysicalMaterial({
-      map: textTexture(chestText, { color: '#ffffff' }),
-      color: new THREE.Color(accent),
-      transparent: true,
-      roughness: 0.75,
-      sheen: 1,
-      sheenColor: new THREE.Color(accent),
-      normalMap: m.collar.normalMap,
-      normalScale: new THREE.Vector2(0.6, 0.6),
-      polygonOffset: true,
-      polygonOffsetFactor: -4,
-    }));
-    decal.receiveShadow = true;
-    torso.add(decal);
-  }
+  if (chestText) addChestDecal(bodyMesh, chestText, accent);
 
   // Shoulders and upper arms.
   const armMat = m.sweater.clone();
@@ -203,6 +186,28 @@ function buildTorso(m, chestText, accent) {
   torso.add(lip);
 
   return torso;
+}
+
+// Projects text onto a mesh (in the mesh's own space) like embroidery and attaches it.
+export function addChestDecal(mesh, text, accent) {
+  const local = new THREE.Mesh(mesh.geometry); // identity transform: decal in mesh space
+  local.updateMatrixWorld(true);
+  const geo = new DecalGeometry(local, new THREE.Vector3(0.44, -0.4, 0.55), new THREE.Euler(-0.12, 0.24, 0), new THREE.Vector3(0.5, 0.125, 0.5));
+  const decal = new THREE.Mesh(geo, new THREE.MeshPhysicalMaterial({
+    map: textTexture(text, { color: '#ffffff' }),
+    color: new THREE.Color(accent),
+    transparent: true,
+    roughness: 0.75,
+    sheen: 1,
+    sheenColor: new THREE.Color(accent),
+    normalMap: tex.ribNormal(),
+    normalScale: new THREE.Vector2(0.6, 0.6),
+    polygonOffset: true,
+    polygonOffsetFactor: -4,
+  }));
+  decal.receiveShadow = true;
+  mesh.add(decal);
+  return decal;
 }
 
 function buildNeckSegment(m, height, count) {

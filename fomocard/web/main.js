@@ -116,46 +116,37 @@ earthGroup.add(earth, atmosphere);
 earthGroup.position.set(0, -2.15, 0);
 scene.add(earthGroup);
 
-// ------------------------------------------------------------ tube of photo tiles
-const TUBE = { rows: 5, cols: 18, radius: 11.2, tileW: 1.84, tileH: 2.76, ySpacing: 3.4 };
+// ------------------------------------------------------------ tube of brand cards
+// the shops the card pays at, as their own gift cards, circling the FOMOCARD
+const BRAND_COUNT = 45;
+const TUBE = { rows: 6, cols: 16, radius: 11, tileW: 2.6, tileH: 2.6 * 54 / 85.6, ySpacing: 2.25 };
 const tube = new THREE.Group();
 const tileMats = [];
 const tileTextures = [];
 const tilePromises = [];
-// soften the photos once on a canvas: a blurred, darkened tube reads as depth, not noise
-function blurredTexture(url) {
-  const tex = new THREE.Texture();
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const img = new Image();
-  img.onload = () => {
-    const c = document.createElement("canvas");
-    c.width = 360; c.height = 540;
-    const g = c.getContext("2d");
-    g.filter = "blur(2.5px) brightness(0.62) saturate(0.6)";
-    g.drawImage(img, -8, -8, c.width + 16, c.height + 16);
-    tex.image = c;
-    tex.needsUpdate = true;
-  };
-  img.src = url;
-  tilePromises.push(new Promise((res) => { img.addEventListener("load", res); img.addEventListener("error", res); }));
-  return tex;
+for (let i = 0; i < BRAND_COUNT; i++) {
+  tilePromises.push(new Promise((res) => {
+    const t = loader.load(`assets/brands/${String(i).padStart(2, "0")}.png`, res, undefined, res);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    tileTextures.push(t);
+  }));
 }
-for (let i = 0; i < 18; i++) tileTextures.push(blurredTexture(`assets/tiles/${String(i).padStart(2, "0")}.jpg`));
 const tileGeo = new THREE.PlaneGeometry(TUBE.tileW, TUBE.tileH);
 const rows = [];
 for (let r = 0; r < TUBE.rows; r++) {
   const row = new THREE.Group();
   row.position.y = (r - (TUBE.rows - 1) / 2) * TUBE.ySpacing;
   for (let c = 0; c < TUBE.cols; c++) {
-    const m = new THREE.MeshBasicMaterial({ map: tileTextures[(r * 7 + c) % tileTextures.length], transparent: true, opacity: 0, side: THREE.DoubleSide });
+    const m = new THREE.MeshBasicMaterial({ map: tileTextures[(r * 11 + c * 3) % BRAND_COUNT], color: 0xa6a6a6, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
     tileMats.push(m);
     const tile = new THREE.Mesh(tileGeo, m);
-    const a = (c / TUBE.cols) * Math.PI * 2;
+    const a = ((c + (r % 2) * 0.5) / TUBE.cols) * Math.PI * 2;
     tile.position.set(Math.sin(a) * TUBE.radius, 0, Math.cos(a) * TUBE.radius);
     tile.lookAt(0, 0, 0);
     row.add(tile);
   }
-  row.userData.speed = (0.65 + 0.9 * (r / (TUBE.rows - 1))) * (r % 2 ? -1 : 1);
+  row.userData.speed = (0.55 + 0.7 * (r / (TUBE.rows - 1))) * (r % 2 ? -1 : 1);
   rows.push(row);
   tube.add(row);
 }
@@ -189,7 +180,7 @@ function bakeTubeEnv() {
   const envScene = new THREE.Scene();
   envScene.background = new THREE.Color(0x050505);
   const copy = tube.clone(true);
-  copy.traverse((o) => { if (o.isMesh) o.material = new THREE.MeshBasicMaterial({ map: o.material.map, side: THREE.DoubleSide }); });
+  copy.traverse((o) => { if (o.isMesh) o.material = new THREE.MeshBasicMaterial({ map: o.material.map, transparent: true, side: THREE.DoubleSide }); });
   envScene.add(copy);
   const strip = new THREE.MeshBasicMaterial({ color: 0xffffff });
   strip.color.multiplyScalar(6);
@@ -209,16 +200,17 @@ const cardFrontMat = new THREE.MeshPhysicalMaterial({
   envMapIntensity: 1.6,
 });
 const cardBackMat = new THREE.MeshPhysicalMaterial({
-  color: 0x0c0c0e, metalness: 0.9, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05,
+  map: load("assets/card_back.png"), metalness: 0.75, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.04,
   envMapIntensity: 1.6,
 });
 const cardEdgeMat = new THREE.MeshStandardMaterial({ color: 0x9aa0aa, metalness: 1, roughness: 0.25 });
 const card = new THREE.Group();
-const body = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: CARD_T, bevelEnabled: false, curveSegments: 24 }), [cardBackMat, cardEdgeMat]);
+const cardBodyMat = new THREE.MeshPhysicalMaterial({ color: 0x0c0c0e, metalness: 0.9, roughness: 0.3 });
+const body = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: CARD_T, bevelEnabled: false, curveSegments: 24 }), [cardBodyMat, cardEdgeMat]);
 body.position.z = -CARD_T / 2;
 const front = new THREE.Mesh(faceGeometry(false), cardFrontMat);
 front.position.z = CARD_T / 2 + 0.0005;
-const back = new THREE.Mesh(faceGeometry(true), cardBackMat);
+const back = new THREE.Mesh(faceGeometry(false), cardBackMat);
 back.rotation.y = Math.PI;
 back.position.z = -CARD_T / 2 - 0.0005;
 card.add(body, front, back);
@@ -248,10 +240,10 @@ gsap.fromTo(canvas, { opacity: 0 }, {
 });
 ScrollTrigger.create({ trigger: ".earth", start: "top top", end: "bottom bottom", scrub: 1, onUpdate: (s) => (state.pE = s.progress) });
 ScrollTrigger.create({ trigger: ".tube", start: "top bottom", end: "bottom bottom", scrub: 1, onUpdate: (s) => (state.pT = s.progress) });
-gsap.timeline({ scrollTrigger: { trigger: ".earth", start: "top top", end: "40% bottom", scrub: 1 } })
+gsap.timeline({ scrollTrigger: { trigger: ".earth", start: "top top", end: "30% top", scrub: 1 } })
   .to(".earth-header", { yPercent: -60, opacity: 0, ease: "none" }, 0)
   .to(".earth-points li", { autoAlpha: 0, y: 24, stagger: { amount: 0.2, from: "random" }, ease: "none" }, 0);
-gsap.timeline({ scrollTrigger: { trigger: ".tube", start: "35% bottom", end: "55% bottom", scrub: 1 } })
+gsap.timeline({ scrollTrigger: { trigger: ".tube", start: "40% bottom", end: "60% bottom", scrub: 1 } })
   .to(".tube-copy", { opacity: 1, ease: "none" });
 
 window.addEventListener("pointermove", (e) => {
@@ -284,26 +276,26 @@ function tick() {
   const { pE, pT } = state;
 
   // earth: turn, shrink and fade as the section scrolls
-  const shrink = easeOut(range(pE, 0.1, 1));
+  const shrink = easeOut(range(pE, 0.05, 0.75));
   earthGroup.scale.setScalar(1.95 - 1.25 * shrink);
   earthGroup.position.y = -2.15 + 0.9 * shrink;
   earthGroup.rotation.y = -Math.PI / 1.4 + (Math.PI / 1.4 - Math.PI / 5) * pE + t * 0.02;
-  const earthAlpha = 1 - range(pE, 0.55, 0.85);
+  const earthAlpha = 1 - range(pE, 0.35, 0.65);
   earthUniforms.uOpacity.value = earthAlpha;
   earthGroup.visible = earthAlpha > 0.001;
 
   // card: drops in during the end of the earth section, spins once through the tube
-  const drop = easeInOut(range(pE, 0.6, 1));
+  const drop = easeInOut(range(pE, 0.35, 0.85));
   cardPivot.position.y = 0.3 + (1 - drop) * 4.6;
   const spinIn = (1 - drop) * Math.PI * 3;
-  const spinTube = pT * Math.PI * 2;
-  cardPivot.rotation.y = spinIn + spinTube + Math.sin(t * 0.6) * 0.08 + state.mx * 0.35;
+  const spinTube = easeInOut(range(pT, 0.15, 0.75)) * Math.PI * 2;
+  cardPivot.rotation.y = state.forceRot ?? (spinIn + spinTube + Math.sin(t * 0.6) * 0.08 + state.mx * 0.35);
   cardPivot.rotation.x = Math.sin(t * 0.5) * 0.03 + state.my * 0.2;
   cardPivot.visible = drop > 0.001;
 
   // tube: fades in with the section and spins with the scroll, rows alternating
-  const tubeAlpha = range(pT, 0.12, 0.3) * (1 - range(pT, 0.92, 1));
-  for (const m of tileMats) m.opacity = tubeAlpha * 0.95;
+  const tubeAlpha = range(pT, 0.05, 0.2) * (1 - range(pT, 0.95, 1));
+  for (const m of tileMats) m.opacity = tubeAlpha;
   tube.visible = tubeAlpha > 0.001;
   tubeIdle += dt * 0.08;
   rows.forEach((row) => (row.rotation.y = (pT * 3.2 + tubeIdle) * row.userData.speed));
@@ -319,4 +311,5 @@ function tick() {
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
 }
+window.__fomo = { state };
 tick();

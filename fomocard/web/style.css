@@ -34,8 +34,8 @@ p { color: var(--muted); font-size: 15px; line-height: 1.45; }
 /* stage */
 #stage { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: 0; opacity: 0; pointer-events: none; }
 .earth, .tube { position: relative; z-index: 1; }
-.earth { height: 350vh; }
-.tube { height: 380vh; }
+.earth { height: 200vh; }
+.tube { height: 240vh; }
 .sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 
 .earth-header { position: absolute; top: 15vh; left: 0; right: 0; text-align: center; display: grid; gap: 18px; justify-items: center; padding: 0 16px; }

@@ -195,8 +195,7 @@ export const STEPS = {
   'project-budget': {
     progress: 0.5,
     mood: 'focus',
-    screen: '$$$',
-    media: [MUX('Z8xT4TOANNDlRhVRrwfpAsuV01rFVlx8IX4AHyLrvtEI')],
+    show: 'chart',
     lines: [
       'Let’s talk numbers, like adults. What’s the budget range?',
       'I’m a TV, I don’t get awkward about money. What’s the budget?',
@@ -325,7 +324,7 @@ export const STEPS = {
   'project-pre-completion': {
     progress: 1,
     mood: 'happy',
-    screen: 'DEAL',
+    show: 'bonding',
     next: 'project-completion',
     lines: [
       'Done. Your project’s in good hands. Strong hands, actually.',

@@ -287,6 +287,8 @@ class Jack {
     sc.face.setText(step.screen ? this.fill(step.screen, true) : null);
     if (step.media?.length) sc.face.playClips(step.media);
     else sc.face.stopClip();
+    if (step.show) sc.face.playShow(step.show, { forced: true });
+    else if (sc.face.showForced) sc.face.endShow();
     sc.glitch(0.45);
     this.sound.glitch();
 

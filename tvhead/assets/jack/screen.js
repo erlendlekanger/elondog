@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SHOWS, SHOW_ORDER } from './shows.js';
 
 const FACE_SIZE = 512;
 
@@ -179,6 +180,17 @@ export class ScreenFace {
     this.brightness = 0;
     this.text = null;
     this.textAlpha = 0;
+    // pump.fun-style broadcasts between lines
+    this.show = null;
+    this.showState = null;
+    this.showT = 0;
+    this.showAlpha = 0;
+    this.showIdx = 0;
+    this.nextShow = 4;
+    this.showCanvas = document.createElement('canvas');
+    this.showCanvas.width = this.showCanvas.height = FACE_SIZE;
+    this.warmTint = new THREE.Color(1.0, 0.86, 0.68);
+    this.white = new THREE.Color(1, 1, 1);
     this.eyeLook = new THREE.Vector2();
     this.mouthPhase = 0;
     this.hls = null;
@@ -187,6 +199,25 @@ export class ScreenFace {
 
   setMood(name) {
     this.moodTarget = MOODS[name] || MOODS.neutral;
+  }
+
+  /** Starts one of the memecoin broadcasts (pill, chart, bonding, ticker). */
+  playShow(name, { forced = false } = {}) {
+    const def = SHOWS[name];
+    if (!def) return;
+    this.show = name;
+    this.showForced = forced;
+    this.showT = 0;
+    this.showState = def.init ? def.init() : null;
+    this.glitch(0.5);
+  }
+
+  endShow() {
+    if (!this.show) return;
+    this.show = null;
+    this.showForced = false;
+    this.nextShow = 7 + Math.random() * 5;
+    this.glitch(0.4);
   }
 
   setText(text) {
@@ -279,6 +310,18 @@ export class ScreenFace {
     this.eyeLook.lerp(look, 1 - Math.pow(0.05, dt));
     this.textAlpha += ((this.text ? 1 : 0) - this.textAlpha) * Math.max(0.25, 1 - Math.pow(0.0005, dt));
 
+    // between lines, while JACK is quiet, the CRT drifts into a broadcast
+    const idle = talk < 0.2 && !this.videoWanted && !this.text && this.power > 0.9;
+    if (this.show) {
+      this.showT += dt;
+      if (this.showT > SHOWS[this.show].duration || (!idle && !this.showForced)) this.endShow();
+    } else if (idle) {
+      this.nextShow -= dt;
+      if (this.nextShow <= 0) this.playShow(SHOW_ORDER[this.showIdx++ % SHOW_ORDER.length]);
+    }
+    this.showAlpha += ((this.show ? 1 : 0) - this.showAlpha) * Math.max(0.2, 1 - Math.pow(0.002, dt));
+    u.uTint.value.copy(this.warmTint).lerp(this.white, this.showAlpha);
+
     this.draw(t, blinkAmt, talk);
     this.texture.needsUpdate = true;
     this.brightness = (0.35 + talk * 0.25) * (1 - this.videoMix) * this.power + this.videoMix * 0.6 * this.power;
@@ -290,7 +333,7 @@ export class ScreenFace {
     const m = this.mood;
     c.clearRect(0, 0, S, S);
     c.save();
-    const faceAlpha = Math.max(0, 1 - this.textAlpha * 1.15);
+    const faceAlpha = Math.max(0, 1 - this.textAlpha * 1.15) * (1 - this.showAlpha);
     c.globalAlpha = faceAlpha;
     c.translate(S / 2, S / 2);
     c.scale(1.5, 1.5);
@@ -355,6 +398,21 @@ export class ScreenFace {
     }
     c.stroke();
     c.restore();
+
+    if (this.showAlpha > 0.01 && (this.show || this.lastShow)) {
+      const name = this.show || this.lastShow;
+      const def = SHOWS[name];
+      const sc = this.showCanvas.getContext('2d');
+      sc.clearRect(0, 0, S, S);
+      sc.save();
+      def.draw(sc, S, Math.min(1, this.showT / def.duration), t, this.showState);
+      sc.restore();
+      c.save();
+      c.globalAlpha = this.showAlpha;
+      c.drawImage(this.showCanvas, 0, 0);
+      c.restore();
+    }
+    if (this.show) this.lastShow = this.show;
 
     // big screen text (used for names, numbers, reactions)
     if (this.textAlpha > 0.01 && this.text) {

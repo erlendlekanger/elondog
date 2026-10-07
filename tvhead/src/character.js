@@ -3,6 +3,7 @@
 // (torso -> neck1 -> neck2 -> head) so a rigged .glb can replace it later.
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 import { createScreenMaterial } from './screen.js';
 import * as tex from './textures.js';
 
@@ -28,6 +29,27 @@ function roundedRectShape(w, h, r) {
   s.lineTo(x, y + r);
   s.quadraticCurveTo(x, y, x + r, y);
   return s;
+}
+
+function textTexture(text, { width = 1024, height = 256, font = '900 150px Arial, Helvetica, sans-serif', color = '#fff' } = {}) {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  let size = parseInt(font.match(/(\d+)px/)[1], 10);
+  while (ctx.measureText(text).width > width * 0.92 && size > 10) {
+    size -= 4;
+    ctx.font = font.replace(/\d+px/, `${size}px`);
+  }
+  ctx.fillText(text, width / 2, height / 2 + 4);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
 }
 
 function makeMaterials(accent) {
@@ -90,7 +112,7 @@ function makeMaterials(accent) {
   };
 }
 
-function buildTorso(m) {
+function buildTorso(m, chestText, accent) {
   const torso = new THREE.Group();
   torso.name = 'torso';
 
@@ -114,7 +136,28 @@ function buildTorso(m) {
   bodyMat.normalMap = m.sweater.normalMap.clone();
   bodyMat.normalMap.repeat.set(36, 18);
   bodyMat.normalMap.needsUpdate = true;
-  torso.add(shadowed(new THREE.Mesh(body, bodyMat)));
+  const bodyMesh = shadowed(new THREE.Mesh(body, bodyMat));
+  torso.add(bodyMesh);
+
+  // Embroidered ticker on the chest, projected onto the sweater.
+  if (chestText) {
+    bodyMesh.updateMatrixWorld(true);
+    const decalGeo = new DecalGeometry(bodyMesh, new THREE.Vector3(0.44, -0.4, 0.55), new THREE.Euler(-0.12, 0.24, 0), new THREE.Vector3(0.5, 0.125, 0.5));
+    const decal = new THREE.Mesh(decalGeo, new THREE.MeshPhysicalMaterial({
+      map: textTexture(chestText, { color: '#ffffff' }),
+      color: new THREE.Color(accent),
+      transparent: true,
+      roughness: 0.75,
+      sheen: 1,
+      sheenColor: new THREE.Color(accent),
+      normalMap: m.collar.normalMap,
+      normalScale: new THREE.Vector2(0.6, 0.6),
+      polygonOffset: true,
+      polygonOffsetFactor: -4,
+    }));
+    decal.receiveShadow = true;
+    torso.add(decal);
+  }
 
   // Shoulders and upper arms.
   const armMat = m.sweater.clone();
@@ -179,7 +222,7 @@ function buildNeckSegment(m, height, count) {
   return g;
 }
 
-function buildTV(m, screenMaterial) {
+function buildTV(m, screenMaterial, brand) {
   const tv = new THREE.Group();
   tv.name = 'TV';
   const W = 1.66, H = 1.24, D = 0.62;
@@ -228,6 +271,14 @@ function buildTV(m, screenMaterial) {
   const bezel = shadowed(new THREE.Mesh(bezelGeo, m.darkPlastic));
   bezel.position.set(sx, 0.02, D / 2 - 0.01);
   tv.add(bezel);
+
+  // Chrome brand badge on the bezel.
+  const badge = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.34, 0.085),
+    new THREE.MeshStandardMaterial({ map: textTexture(brand), transparent: true, metalness: 1, roughness: 0.22, color: 0xd8d8dc }),
+  );
+  badge.position.set(sx, 0.02 - 0.44, D / 2 + 0.036);
+  tv.add(badge);
 
   // Curved CRT glass with the face shader.
   const screenGeo = new THREE.PlaneGeometry(SCREEN_W + 0.04, SCREEN_H + 0.04, 48, 36);
@@ -315,12 +366,12 @@ function buildTV(m, screenMaterial) {
   return { tv, screen, antennas, size: { W, H, D } };
 }
 
-export function buildCharacter(accent) {
+export function buildCharacter(accent, { brand = 'TV/HEAD', chestText = '' } = {}) {
   const m = makeMaterials(accent);
   const screenMaterial = createScreenMaterial(accent, SCREEN_W / SCREEN_H);
 
   const root = new THREE.Group();
-  const torso = buildTorso(m);
+  const torso = buildTorso(m, chestText, accent);
   root.add(torso);
 
   const neck1 = new THREE.Group();
@@ -340,7 +391,7 @@ export function buildCharacter(accent) {
   head.position.y = 0.18;
   neck2.add(head);
 
-  const { tv, screen, antennas, size } = buildTV(m, screenMaterial);
+  const { tv, screen, antennas, size } = buildTV(m, screenMaterial, brand);
   tv.position.y = size.H / 2 + 0.06;
   head.add(tv);
 

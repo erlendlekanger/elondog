@@ -7,15 +7,31 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import gsap from 'gsap';
 import { buildCharacter } from './character.js';
+import { createMarket, formatPrice, formatUsd, formatPct } from './market.js';
+import { createAgent, createChartCanvas, moodFrom } from './agent.js';
 
 // ---------------------------------------------------------------------------
 // CONFIG: change these to make the site yours.
 // ---------------------------------------------------------------------------
 const CONFIG = {
   name: 'TV/HEAD',
-  accent: '#ff3a22',
+  ticker: '$TVHEAD',
+  accent: '#ff3a22',     // normal colour
+  pumpColor: '#39ff88',  // when the chart is going up
+  dumpColor: '#ff1d1d',  // when the chart is going down
+  chain: 'solana',
+  // Paste your token's contract address here after launch. Empty = demo mode.
+  contractAddress: '',
+  links: {
+    buy: 'https://pump.fun',          // e.g. your pump.fun / Jupiter / Raydium link
+    chart: '',                        // empty = DexScreener page found automatically
+    x: 'https://x.com',
+    telegram: 'https://t.me',
+  },
   // Path to your own rigged model, e.g. 'models/me.glb'. Leave null to use the
   // built-in TV-head character. See README.md for how to make one.
   modelUrl: null,
@@ -37,7 +53,7 @@ if (!gl) {
   document.querySelector('[data-loader]').remove();
   const p = document.createElement('p');
   p.className = 'fallback';
-  p.textContent = 'Nettleseren din støtter ikke WebGL 2.';
+  p.textContent = 'Your browser does not support WebGL 2.';
   document.body.append(p);
   throw new Error('WebGL2 unavailable');
 }
@@ -56,6 +72,13 @@ scene.background = new THREE.Color(0x060608);
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.32;
+// Real studio HDRI (Poly Haven, CC0) for believable reflections; swaps in when loaded.
+new RGBELoader().load('assets/studio.hdr', (hdr) => {
+  hdr.mapping = THREE.EquirectangularReflectionMapping;
+  scene.environment = pmrem.fromEquirectangular(hdr).texture;
+  scene.environmentIntensity = 0.55;
+  hdr.dispose();
+});
 
 const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 60);
 const cameraBase = new THREE.Vector3(0, 0.95, 7.8);
@@ -120,7 +143,7 @@ scene.add(screenLight);
 // ---------------------------------------------------------------------------
 // Character
 // ---------------------------------------------------------------------------
-const character = buildCharacter(CONFIG.accent);
+const character = buildCharacter(CONFIG.accent, { brand: CONFIG.name, chestText: CONFIG.ticker });
 character.root.position.y = -0.55;
 scene.add(character.root);
 
@@ -177,6 +200,15 @@ let customModel = null;
 const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 });
 const composer = new EffectComposer(renderer, rt);
 composer.addPass(new RenderPass(scene, camera));
+// Ambient occlusion (contact shadows in creases) on desktop GPUs only.
+const isSmall = Math.min(window.innerWidth, window.innerHeight) < 700 || matchMedia('(hover: none)').matches
+  || new URLSearchParams(location.search).has('lite');
+if (!isSmall) {
+  const gtao = new GTAOPass(scene, camera, 1, 1);
+  gtao.blendIntensity = 0.85;
+  gtao.updateGtaoMaterial({ radius: 0.35, distanceFallOff: 1, thickness: 1, scale: 1.2 });
+  composer.addPass(gtao);
+}
 const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.55, 0.55, 0.92);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
@@ -279,18 +311,24 @@ function glitch(strength = 1, dur = 0.45) {
     .to(finish.uniforms.uGlitch, { value: 0, duration: dur, ease: 'power2.in' }, '<');
 }
 
+// The market mood sets a resting expression; reactions return to it afterwards.
+const baseline = { happy: 0, sad: 0 };
+
 function expression(name, hold = 2.2) {
-  const target = { happy: 0, surprise: 0 };
+  const target = { happy: 0, surprise: 0, sad: 0 };
   if (name === 'happy') target.happy = 1;
   if (name === 'surprise') target.surprise = 1;
+  if (name === 'sad') target.sad = 1;
   gsap.to(U.uHappy, { value: target.happy, duration: 0.25, ease: 'power2.out' });
   gsap.to(U.uSurprise, { value: target.surprise, duration: 0.2, ease: 'power2.out' });
-  if (name !== 'neutral') {
-    gsap.delayedCall(hold, () => {
-      gsap.to(U.uHappy, { value: 0, duration: 0.4 });
-      gsap.to(U.uSurprise, { value: 0, duration: 0.4 });
-    });
-  }
+  gsap.to(U.uSad, { value: target.sad, duration: 0.3, ease: 'power2.out' });
+  if (name !== 'neutral') gsap.delayedCall(hold, restExpression);
+}
+
+function restExpression() {
+  gsap.to(U.uHappy, { value: baseline.happy, duration: 0.5 });
+  gsap.to(U.uSurprise, { value: 0, duration: 0.4 });
+  gsap.to(U.uSad, { value: baseline.sad, duration: 0.5 });
 }
 
 function channelSwitch() {
@@ -342,33 +380,40 @@ let talking = false;
 
 const SCRIPT = {
   start: {
-    text: 'Hei. Jeg er TV/HEAD. Beveg musen, så følger jeg med.',
-    choices: [['Hvem er du?', 'who'], ['Gjør noe kult', 'cool'], ['Bytt kanal', 'channel']],
+    text: () => `gm. i'm ${CONFIG.name}, a tv that watches the ${CONFIG.ticker} chart 24/7. move your mouse, i'm watching you too.`,
+    choices: [[() => `what is ${CONFIG.ticker}?`, 'what'], ['show me the chart', 'chart'], ['how are we doing?', 'mood'], ['copy CA', 'ca']],
   },
-  who: {
-    text: 'En 3D-figur laget med Three.js. Hodet mitt er en gammel CRT-TV, og ansiktet er tegnet i en shader.',
+  what: {
+    text: () => `${CONFIG.ticker} is a memecoin with a tv for a head. no roadmap, just vibes, antennas and a very honest screen.`,
     do: () => nodYes(),
-    choices: [['Hvordan følger du musen?', 'how'], ['Gjør noe kult', 'cool']],
+    choices: [['show me the chart', 'chart'], ['how do i buy?', 'buy'], ['back', 'start']],
   },
-  how: {
-    text: 'Musen glattes ut i tre farter: øynene raskest, så hodet, så kroppen. Det gjør at jeg virker levende.',
+  chart: {
+    text: () => `switching to channel ${CONFIG.ticker}...`,
+    do: () => showChart(7),
+    choices: [['how are we doing?', 'mood'], ['back', 'start']],
+  },
+  mood: {
+    text: () => {
+      const s = market.state;
+      const m = moodFrom(s.change);
+      const line = m === 'pump' ? 'we are pumping. my screen is literally green.'
+        : m === 'dump' ? 'we are dipping. i am fine. this is fine.'
+        : 'sideways. tuning my knobs and waiting.';
+      return `${line} 1h ${formatPct(s.change.h1)}, 24h ${formatPct(s.change.h24)}.`;
+    },
+    do: () => { const m = moodFrom(market.state.change); if (m === 'pump') { expression('happy', 2); nodYes(); } else if (m === 'dump') { expression('sad', 2.5); shakeNo(); } else nodYes(); },
+    choices: [['show me the chart', 'chart'], ['copy CA', 'ca'], ['back', 'start']],
+  },
+  buy: {
+    text: () => CONFIG.contractAddress ? 'copy the CA up top, or hit the buy button. only spend what you are happy to lose to a tv.' : 'not launched yet. stay tuned to this channel.',
     do: () => expression('happy'),
-    choices: [['Bytt kanal', 'channel'], ['Tilbake', 'start']],
+    choices: [['copy CA', 'ca'], ['back', 'start']],
   },
-  cool: {
-    text: 'Se på dette.',
-    do: () => { channelSwitch(); gsap.delayedCall(0.8, () => { expression('happy', 2.5); nodYes(); bump(); }); },
-    choices: [['Igjen!', 'cool'], ['Nei takk', 'no']],
-  },
-  channel: {
-    text: 'Kanal 03. Ingen signal… bare tuller.',
-    do: () => { channelSwitch(); gsap.delayedCall(0.9, () => expression('surprise', 1.2)); },
-    choices: [['Hvem er du?', 'who'], ['Tilbake', 'start']],
-  },
-  no: {
-    text: 'Greit, greit. Jeg står her og ser på deg likevel.',
-    do: () => { shakeNo(); expression('neutral'); },
-    choices: [['Unnskyld', 'start']],
+  ca: {
+    text: () => CONFIG.contractAddress ? 'copied. always double check the address.' : 'no CA yet. anyone posting one before launch is lying.',
+    do: () => { copyCA(); expression(CONFIG.contractAddress ? 'happy' : 'surprise', 1.5); },
+    choices: [['how do i buy?', 'buy'], ['back', 'start']],
   },
 };
 
@@ -377,15 +422,16 @@ function say(id) {
   choicesEl.innerHTML = '';
   if (typing) typing.kill();
   node.do?.();
+  const text = typeof node.text === 'function' ? node.text() : node.text;
   const state = { n: 0 };
   talking = true;
   typing = gsap.to(state, {
-    n: node.text.length,
-    duration: node.text.length * 0.028,
+    n: text.length,
+    duration: text.length * 0.024,
     ease: 'none',
     onUpdate: () => {
       msgEl.innerHTML = '';
-      msgEl.append(node.text.slice(0, Math.round(state.n)));
+      msgEl.append(text.slice(0, Math.round(state.n)));
       const caret = document.createElement('span');
       caret.className = 'caret';
       msgEl.append(caret);
@@ -395,13 +441,129 @@ function say(id) {
       node.choices.forEach(([label, next], i) => {
         const b = document.createElement('button');
         b.type = 'button';
-        b.textContent = label;
+        b.textContent = typeof label === 'function' ? label() : label;
         b.addEventListener('click', () => say(next));
         choicesEl.append(b);
         setTimeout(() => b.classList.add('in'), 80 * i + 30);
       });
     },
   });
+}
+
+// ---------------------------------------------------------------------------
+// Memecoin layer: market data, agent feed, mood colours, header
+// ---------------------------------------------------------------------------
+const market = createMarket({ chain: CONFIG.chain, contractAddress: CONFIG.contractAddress });
+const agent = createAgent(market, CONFIG.ticker);
+const chartCanvas = createChartCanvas(CONFIG.ticker);
+const chartTexture = new THREE.CanvasTexture(chartCanvas.canvas);
+U.tChart.value = chartTexture;
+
+const $ = (sel) => document.querySelector(sel);
+const statEls = { price: $('[data-stat="price"]'), h24: $('[data-stat="h24"]'), mcap: $('[data-stat="mcap"]') };
+const feedEl = $('[data-feed]');
+const toastEl = $('[data-toast]');
+
+function toast(text) {
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => toastEl.classList.remove('show'), 1800);
+}
+
+function copyCA() {
+  if (!CONFIG.contractAddress) { toast('CA not live yet'); return; }
+  navigator.clipboard?.writeText(CONFIG.contractAddress).then(() => toast('CA copied'), () => toast(CONFIG.contractAddress));
+}
+
+function showChart(seconds = 6) {
+  channelSwitch();
+  gsap.to(U.uChart, { value: 1, duration: 0.15, delay: 0.2 });
+  gsap.to(U.uChart, { value: 0, duration: 0.15, delay: seconds, onStart: () => glitch(0.6) });
+}
+
+// Accent colour follows the market: green pump, red dump.
+const accentNow = new THREE.Color(CONFIG.accent);
+function setAccent(hex) {
+  const from = accentNow.clone();
+  const to = new THREE.Color(hex);
+  const o = { t: 0 };
+  gsap.to(o, {
+    t: 1,
+    duration: 1.2,
+    ease: 'power2.inOut',
+    onUpdate: () => {
+      accentNow.copy(from).lerp(to, o.t);
+      U.uColor.value.copy(accentNow);
+      screenLight.color.copy(accentNow);
+      rimL.color.copy(accentNow);
+      backdrop.material.uniforms.uColor.value.copy(accentNow);
+      document.documentElement.style.setProperty('--accent', `#${accentNow.getHexString()}`);
+    },
+  });
+}
+
+let lastMood = null;
+let pendingMood = null;
+let pendingCount = 0;
+let lastMoodChange = -Infinity;
+market.onUpdate((st) => {
+  statEls.price.textContent = formatPrice(st.price);
+  statEls.h24.textContent = formatPct(st.change.h24);
+  statEls.h24.className = st.change.h24 >= 0 ? 'up' : 'down';
+  statEls.mcap.textContent = formatUsd(st.marketCap);
+  chartCanvas.draw(st);
+  chartTexture.needsUpdate = true;
+  if (!CONFIG.links.chart && st.url) $('[data-link="chart"]')?.setAttribute('href', st.url);
+
+  // Hysteresis: a new mood must hold for two updates and 15 s must pass between changes.
+  const raw = moodFrom(st.change);
+  pendingCount = raw === pendingMood ? pendingCount + 1 : 1;
+  pendingMood = raw;
+  const mood = lastMood === null || (pendingCount >= 2 && performance.now() - lastMoodChange > 15000) ? raw : lastMood;
+  if (mood !== lastMood) {
+    lastMoodChange = performance.now();
+    baseline.happy = mood === 'pump' ? 1 : 0;
+    baseline.sad = mood === 'dump' ? 0.8 : 0;
+    setAccent(mood === 'pump' ? CONFIG.pumpColor : mood === 'dump' ? CONFIG.dumpColor : CONFIG.accent);
+    if (lastMood) { glitch(0.7); mood === 'pump' ? nodYes() : mood === 'dump' ? shakeNo() : null; }
+    restExpression();
+    lastMood = mood;
+  }
+});
+
+function pushFeed(text) {
+  const li = document.createElement('li');
+  li.className = 'new';
+  const time = document.createElement('time');
+  time.textContent = new Date().toTimeString().slice(0, 5);
+  li.append(time, text);
+  feedEl.append(li);
+  while (feedEl.children.length > 12) feedEl.firstElementChild.remove();
+}
+
+function setupHeader() {
+  $('[data-mode]').textContent = market.state.demo ? 'demo' : 'live';
+  $('[data-ca-value]').textContent = CONFIG.contractAddress
+    ? `${CONFIG.contractAddress.slice(0, 4)}…${CONFIG.contractAddress.slice(-4)}`
+    : 'coming soon';
+  $('[data-ca]').addEventListener('click', copyCA);
+  const buy = $('[data-buy]');
+  buy.textContent = `Buy ${CONFIG.ticker}`;
+  buy.href = CONFIG.links.buy || '#';
+  const nav = $('[data-links]');
+  for (const [key, label] of [['chart', 'Chart'], ['x', 'X'], ['telegram', 'Telegram']]) {
+    const url = CONFIG.links[key] || (key === 'chart' ? '#' : '');
+    if (!url) continue;
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = label;
+    a.dataset.link = key;
+    nav.append(a);
+  }
+  $('[data-chat-label]').textContent = `// ${CONFIG.name.toLowerCase()}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -524,10 +686,11 @@ function tick() {
 // Boot
 // ---------------------------------------------------------------------------
 // ?debug exposes internals for automated screenshots.
-if (new URLSearchParams(location.search).has('debug')) window.__tvhead = { gsap, U, mouse };
+if (new URLSearchParams(location.search).has('debug')) window.__tvhead = { gsap, U, mouse, character, camera, market };
 
 document.title = CONFIG.name;
 document.querySelector('[data-brand]').textContent = CONFIG.name;
+setupHeader();
 document.documentElement.style.setProperty('--accent', CONFIG.accent);
 
 (async () => {
@@ -544,4 +707,10 @@ document.documentElement.style.setProperty('--accent', CONFIG.accent);
     .to(U.uPower, { value: 3.2, duration: 0.6, ease: 'power2.out' })
     .to(U.uStatic, { value: 0, duration: 0.6, ease: 'power3.in' }, '<0.2')
     .add(() => { nodYes(); say('start'); }, '+=0.2');
+
+  market.start();
+  pushFeed('booting agent... signal acquired');
+  setInterval(() => pushFeed(agent.next()), 3500);
+  // Flip to the chart channel now and then.
+  setInterval(() => { if (!document.hidden) showChart(6); }, 26000);
 })();

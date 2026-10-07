@@ -19,6 +19,9 @@ uniform vec2  uLook;
 uniform float uBlink;
 uniform float uHappy;
 uniform float uSurprise;
+uniform float uSad;
+uniform float uChart;
+uniform sampler2D tChart;
 uniform float uTalk;
 uniform float uGlitch;
 uniform float uStatic;
@@ -40,14 +43,16 @@ float sdArc(vec2 p, float ra, float rb, float aperture) {
   return ((sc.y * p.x > sc.x * p.y) ? length(p - sc * ra) : abs(length(p) - ra)) - rb;
 }
 
-float eye(vec2 p) {
+float eye(vec2 p, float side) {
   // neutral / blinking pill
   float h = mix(0.085, 0.006, uBlink);
   vec2 size = mix(vec2(0.052, h), vec2(0.07, max(h, 0.07) * 1.05), uSurprise);
   float pill = sdRoundBox(p, size, min(size.x, size.y));
   // happy ^ eye
   float happy = sdArc(p + vec2(0.0, 0.03), 0.065, 0.017, 1.1);
-  return mix(pill, happy, uHappy);
+  // sad: droopy lids cut the top of the pill, lower on the outer side
+  float sad = max(sdRoundBox(p + vec2(0.0, 0.01), vec2(0.052, 0.07), 0.052), (p.y - 0.005 + 0.45 * side * p.x) * 0.9);
+  return mix(mix(pill, happy, uHappy), sad, uSad);
 }
 
 float mouth(vec2 p) {
@@ -55,6 +60,8 @@ float mouth(vec2 p) {
   vec2 ab = vec2(0.075 + 0.02 * uHappy, 0.012 + 0.055 * uTalk);
   float open = (length(p / ab) - 1.0) * min(ab.x, ab.y);
   float o = length(p) - 0.055;
+  float frown = sdArc(p + vec2(0.0, 0.22), 0.2, 0.014, 0.38);
+  smile = mix(smile, frown, uSad);
   float m = mix(smile, open, smoothstep(0.02, 0.15, uTalk));
   return mix(m, abs(o) - 0.014, uSurprise);
 }
@@ -62,11 +69,22 @@ float mouth(vec2 p) {
 float face(vec2 uv) {
   vec2 p = (uv - 0.5) * vec2(uAspect, 1.0);
   p -= uLook * vec2(0.075, 0.05);
-  float d = min(eye(p - vec2(-0.19, 0.075)), eye(p - vec2(0.19, 0.075)));
+  float d = min(eye(p - vec2(-0.19, 0.075), -1.0), eye(p - vec2(0.19, 0.075), 1.0));
   d = min(d, mouth(p - vec2(0.0, -0.14)));
   float core = smoothstep(0.004, -0.003, d);
   float halo = exp(-max(d, 0.0) * 38.0) * 0.32;
   return core + halo;
+}
+
+float chart(vec2 uv) {
+  float a = texture2D(tChart, uv).a;
+  return a * 1.1;
+}
+
+float picture(vec2 uv) {
+  float f = uChart < 0.999 ? face(uv) : 0.0;
+  float ch = uChart > 0.001 ? chart(uv) : 0.0;
+  return mix(f, ch, uChart);
 }
 
 void main() {
@@ -83,9 +101,9 @@ void main() {
   float split = 0.004 + uGlitch * 0.02;
 
   vec3 col;
-  col.r = face(uv + vec2(split, 0.0));
-  col.g = face(uv);
-  col.b = face(uv - vec2(split, 0.0));
+  col.r = picture(uv + vec2(split, 0.0));
+  col.g = picture(uv);
+  col.b = picture(uv - vec2(split, 0.0));
   col = vec3(col.g * 0.25 + col.r * 0.75, col.g, col.g * 0.25 + col.b * 0.75) * uColor;
 
   // phosphor background glow
@@ -128,6 +146,9 @@ export function createScreenMaterial(color, aspect) {
       uBlink: { value: 0 },
       uHappy: { value: 0 },
       uSurprise: { value: 0 },
+      uSad: { value: 0 },
+      uChart: { value: 0 },
+      tChart: { value: null },
       uTalk: { value: 0 },
       uGlitch: { value: 0 },
       uStatic: { value: 0 },

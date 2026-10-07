@@ -16,21 +16,35 @@ Ingen byggesteg. Alt er vanlige filer som Vercel serverer direkte.
 | `src/character.js` | Figuren (genser, nakke, TV) bygget i kode |
 | `src/screen.js` | Ansiktet på skjermen (shader) |
 | `src/textures.js` | Strikk, plast og høyttaler-teksturer, generert i kode |
+| `src/market.js` | Kursdata fra DexScreener (eller demo) |
+| `src/agent.js` | Agent-feeden, humør og chartet på TV-skjermen |
+| `assets/studio.hdr` | Studiolys for refleksjoner (Poly Haven, CC0) |
 | `src/style.css` | Utseende på tekst og knapper |
 
 ## Endre ting raskt
 
-I `src/main.js`, øverst:
+Alt du trenger å endre står i `CONFIG` øverst i `src/main.js`:
 
 ```js
 const CONFIG = {
-  name: 'TV/HEAD',      // navnet oppe til venstre
-  accent: '#ff3a22',    // fargen på ansiktet og lyset
-  modelUrl: null,       // din egen 3D-modell, f.eks. 'models/meg.glb'
+  name: 'TV/HEAD',             // navnet oppe til venstre og på TV-en
+  ticker: '$TVHEAD',           // står på genseren, chatten og kjøpsknappen
+  accent: '#ff3a22',           // vanlig farge
+  pumpColor: '#39ff88',        // farge når kursen går opp
+  dumpColor: '#ff1d1d',        // farge når kursen går ned
+  chain: 'solana',
+  contractAddress: '',         // lim inn CA etter lansering. Tom = demomodus
+  links: { buy: '...', chart: '', x: '...', telegram: '...' },
+  modelUrl: null,              // din egen 3D-modell, f.eks. 'models/meg.glb'
 };
 ```
 
-Teksten i chatten står i `SCRIPT` lenger ned i samme fil.
+- **Uten CA** kjører siden i *demomodus* med tilfeldig kurs, og det står DEMO i feeden.
+- **Med CA** hentes ekte pris, 24t-endring, market cap og volum fra DexScreener hvert 20. sekund.
+  Ansiktet blir glad og grønt ved pump, lei seg og rødt ved dump, og TV-en bytter av og til til chart-kanalen.
+- Agent-feeden er kommentarer laget ut fra markedsdataene. Den handler ikke, og siden sier det tydelig.
+- Teksten i chatten står i `SCRIPT` i `src/main.js`. Agentens replikker står i `src/agent.js`.
+- `?lite` på slutten av adressen slår av de tyngste effektene.
 
 ## Kjøre lokalt
 

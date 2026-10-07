@@ -25,7 +25,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 /* ————————————————— Loader ————————————————— */
-const LOADER_LINES = ['Agent Butthole', 'ChatGPT + Claude + Grok', 'merging three brains', 'scanning markets, X, the web', 'gm'];
+const LOADER_LINES = ['agent butthole', 'ChatGPT + Claude + Grok', 'merging three brains', 'scanning markets, X, the web', 'gm'];
 const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*<>[]{}/\\_-+=?';
 
 class Loader {

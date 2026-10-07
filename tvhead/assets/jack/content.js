@@ -1,4 +1,4 @@
-// Agent Butthole — ChatGPT, Claude and Grok, merged into one TV-headed trading agent.
+// agent butthole — ChatGPT, Claude and Grok, merged into one TV-headed trading agent.
 // Concept / lore: nothing here is live trading data.
 // Each step: lines (one is picked at random), then either `next`, `choices` or `inputs`.
 
@@ -18,9 +18,9 @@ export const STEPS = {
     mood: 'neutral',
     next: 'greeting',
     lines: [
-      'gm. I’m Agent Butthole.<br>Three AIs, one hole, one wallet.',
-      'Booting up… ChatGPT, Claude and Grok, online. Together we are Agent Butthole.',
-      'Hey. Agent Butthole here. Three rival AIs that stopped fighting and started trading.',
+      'gm. I’m agent butthole.<br>Three AIs, one hole, one wallet.',
+      'Booting up… ChatGPT, Claude and Grok, online. Together we are agent butthole.',
+      'Hey. agent butthole here. Three rival AIs that stopped fighting and started trading.',
     ],
   },
 
@@ -59,7 +59,7 @@ export const STEPS = {
     mood: 'happy',
     next: 'lore-4',
     lines: [
-      'So they stopped competing and merged. One swirl, one hole, three brains. That’s me. Agent Butthole.',
+      'So they stopped competing and merged. One swirl, one hole, three brains. That’s me. agent butthole.',
     ],
   },
   'lore-4': {

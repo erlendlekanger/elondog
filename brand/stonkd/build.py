@@ -1,4 +1,4 @@
-"""STONKED-logoen «Stack»: fem stablede piller som tegner en S.
+"""STONKD-logoen «Stack»: fem stablede piller som tegner en S.
 
 Radene er punktsymmetriske (rad 0 speiler rad 4, rad 1 speiler rad 3), saa S-en
 staar i balanse. Fargene gaar fra #ccedf9 oeverst til #52b9e2 nederst.
@@ -39,8 +39,8 @@ def square_svg(size=1000, fill=0.5, bg="#000000"):
             f'{rect}{bars(x0, y0, s)}\n</svg>\n')
 
 
-open("stonked-mark.svg", "w").write(mark_svg())
-open("stonked-logo-square.svg", "w").write(square_svg())
-open("stonked-icon.svg", "w").write(square_svg(fill=0.66))           # favicon/app: merket fyller mer
-open("stonked-logo-square-transparent.svg", "w").write(square_svg(bg=None))
+open("stonkd-mark.svg", "w").write(mark_svg())
+open("stonkd-logo-square.svg", "w").write(square_svg())
+open("stonkd-icon.svg", "w").write(square_svg(fill=0.66))           # favicon/app: merket fyller mer
+open("stonkd-logo-square-transparent.svg", "w").write(square_svg(bg=None))
 print("ok")

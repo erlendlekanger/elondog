@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Explore · Hold</title>
+<meta name="description" content="Every coin launched on Hold, with its holders, how long they hold and what they have been paid.">
+<meta name="theme-color" content="#000000">
+<meta property="og:title" content="Explore · Hold">
+<meta property="og:description" content="Every coin launched on Hold, with its holders, how long they hold and what they have been paid.">
+<meta property="og:image" content="https://usehold.fun/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Inter+Tight:wght@500..800&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main class="page">
+  <div class="wrap wide">
+    <section class="page-head">
+      <h1 class="h-page rise">Explore</h1>
+      <p class="lede fade-in" style="--d:.3s">Every coin launched on Hold. Each one pays all of its creator fees to its holders, weighted by how long they hold.</p>
+    </section>
+    <p class="offline-note">The payout desk is not reachable right now, so live numbers are not shown.</p>
+    <div class="stats4" style="margin-bottom:34px">
+      <div class="card stat rv"><div class="v" data-s="coins">–</div><div class="k">coins</div></div>
+      <div class="card stat rv" style="--rd:.05s"><div class="v" data-s="collected">–</div><div class="k">fees collected</div></div>
+      <div class="card stat rv" style="--rd:.1s"><div class="v grad" data-s="sent">–</div><div class="k">paid to holders</div></div>
+      <div class="card stat rv" style="--rd:.15s"><div class="v" data-s="holders">–</div><div class="k">holders paid</div></div>
+    </div>
+    <div class="toolbar"><div class="tabs" data-sort><button data-k="mcap" class="on">Market cap</button><button data-k="paid">Most paid</button><button data-k="holders">Most holders</button><button data-k="hold">Longest held</button><button data-k="new">Newest</button></div></div>
+    <div class="grid3" data-list><div class="empty card" style="grid-column:1/-1">Loading…</div></div>
+  </div>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+<script src="/assets/explore.js?v=1"></script>
+</body>
+</html>

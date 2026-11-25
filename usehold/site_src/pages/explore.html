@@ -1,0 +1,21 @@
+title: Explore · Hold
+desc: Every coin launched on Hold, with its holders, how long they hold and what they have been paid.
+scripts: /assets/explore.js
+---
+<main class="page">
+  <div class="wrap wide">
+    <section class="page-head">
+      <h1 class="h-page rise">Explore</h1>
+      <p class="lede fade-in" style="--d:.3s">Every coin launched on Hold. Each one pays all of its creator fees to its holders, weighted by how long they hold.</p>
+    </section>
+    <p class="offline-note">The payout desk is not reachable right now, so live numbers are not shown.</p>
+    <div class="stats4" style="margin-bottom:34px">
+      <div class="card stat rv"><div class="v" data-s="coins">–</div><div class="k">coins</div></div>
+      <div class="card stat rv" style="--rd:.05s"><div class="v" data-s="collected">–</div><div class="k">fees collected</div></div>
+      <div class="card stat rv" style="--rd:.1s"><div class="v grad" data-s="sent">–</div><div class="k">paid to holders</div></div>
+      <div class="card stat rv" style="--rd:.15s"><div class="v" data-s="holders">–</div><div class="k">holders paid</div></div>
+    </div>
+    <div class="toolbar"><div class="tabs" data-sort><button data-k="mcap" class="on">Market cap</button><button data-k="paid">Most paid</button><button data-k="holders">Most holders</button><button data-k="hold">Longest held</button><button data-k="new">Newest</button></div></div>
+    <div class="grid3" data-list><div class="empty card" style="grid-column:1/-1">Loading…</div></div>
+  </div>
+</main>

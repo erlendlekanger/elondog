@@ -1,0 +1,29 @@
+title: How it works · Hold
+desc: How Hold splits a coin's creator fees between its holders by how much they hold and how long they have held it.
+---
+<main class="page">
+  <div class="wrap narrow doc">
+    <section style="padding:30px 0 10px">
+      <h1 class="h-page rise">How Hold pays holders</h1>
+      <p class="lede fade-in" style="--d:.3s;margin-top:22px">Every coin launched here sends all of its creator fees to the people holding it, in SOL or in the stock it is paired with. How much each wallet gets depends on two things: how many coins it holds and how long it has held them.</p>
+    </section>
+    <h2 class="rv">Where the fees go</h2>
+    <p class="rv">When a coin is launched on Hold, the launch transaction moves the coin's pump.fun creator fee into fee sharing with one shareholder, Hold's payout wallet, at 100%, and revokes the right to change it. From then on every creator fee of the coin flows to the payout wallet, and the payout wallet pays it on to the holders. Nothing is kept: the only cost is Solana's network fee for the desk's own transactions.</p>
+    <h2 class="rv">Who counts</h2>
+    <p class="rv">Every wallet holding at least 0.1% of the coin's supply. The bonding curve, the PumpSwap pool and the payout wallet itself are not holders.</p>
+    <h2 class="rv">The split</h2>
+    <p class="rv">Every six minutes the desk collects the coin's fees and splits them between the holders by weight:</p>
+    <div class="math rv">weight = coins held × seconds held × hold multiplier<br>hold multiplier = 1 + 9 × (1 − e<sup>−days held / 7</sup>) &nbsp;&nbsp; 1x → 2.2x after a day → 6.7x after a week → 9.9x after a month</div>
+    <p class="rv">The desk looks at every holder every 40 seconds and credits the time to what a wallet held at the previous look, so buying right before a round earns about 40 seconds' worth. Buying more mixes new coins into the bag (the hold time is averaged over the coins), selling part cuts the hold time by the part sold, and selling everything starts it again at zero.</p>
+    <h2 class="rv">Paid in SOL or in stocks</h2>
+    <p class="rv">A coin can be paired with SOL or with one of the tokenized stocks pump.fun accepts as a quote (TSLAx, NVDAx, SPYx and more). It trades in what it is paired with, and its holders are paid in it: the desk swaps the fees into the stock and sends it to every holder.</p>
+    <h2 class="rv">Questions</h2>
+    <div class="faq rv">
+      <details><summary>Can the launcher take the fees later?</summary><p>No. The split is set in the launch transaction and the admin is revoked in the same instruction. Neither the launcher nor Hold can change it.</p></details>
+      <details><summary>Do I need to claim anything?</summary><p>No. Payments arrive in your wallet on their own, many holders per transaction.</p></details>
+      <details><summary>Why weight by time?</summary><p>So that holders who stay are paid more than wallets that buy just before a payout and sell right after. A wallet holding 1% for two weeks is paid more than one that just bought 8%.</p></details>
+      <details><summary>Where can I check it?</summary><p>In the <a href="/proof">ledger</a>: every collection, split and payout, each with its Solana transaction, and a download of the full history.</p></details>
+    </div>
+    <div class="cta rv" style="margin-top:70px;padding:48px"><h2 style="font-size:46px">Launch it. <em>Hold it.</em></h2><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill blue lg" href="/launch">Launch a coin <span class="arr">→</span></a><a class="pill lg" href="/explore">Explore</a></div></div>
+  </div>
+</main>

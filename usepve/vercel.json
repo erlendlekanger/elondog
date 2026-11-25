@@ -1,0 +1,21 @@
+{
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "web",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {"source": "/api/ledger.jsonl", "destination": "/api/gate?p=api/ledger.jsonl"},
+    {"source": "/api/:path*", "destination": "/api/gate?p=api/:path*"},
+    {"source": "/img/:path*", "destination": "/api/gate?p=img/:path*"},
+    {"source": "/meta/:path*", "destination": "/api/gate?p=meta/:path*"},
+    {"source": "/r", "destination": "/root"},
+    {"source": "/p", "destination": "/pair"}
+  ],
+  "headers": [
+    {"source": "/(.*)", "headers": [{"key": "X-Content-Type-Options", "value": "nosniff"}, {"key": "X-Frame-Options", "value": "DENY"}, {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"}]},
+    {"source": "/(.*).(js|css|html)", "headers": [{"key": "Cache-Control", "value": "no-store"}]},
+    {"source": "/", "headers": [{"key": "Cache-Control", "value": "no-store"}]}
+  ],
+  "functions": {"api/gate.py": {"maxDuration": 60}}
+}

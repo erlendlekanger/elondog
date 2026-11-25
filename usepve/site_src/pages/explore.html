@@ -1,0 +1,24 @@
+title: Raid board · PVE
+desc: Every player on PVE: each pair, the PVE it keeps locked and the loot its builder has earned.
+scripts: /assets/explore.js
+---
+<main class="page">
+  <div class="wrap wide">
+    <section class="page-head">
+      <h1 class="h-page rise">Raid board</h1>
+      <p class="lede fade-in" style="--d:.3s">Every pair is a player. The more PVE a pair keeps locked, and the longer, the bigger its cut of PVE's creator fees.</p>
+    </section>
+    <p class="offline-note">The payout desk is not reachable right now, so live numbers are not shown.</p>
+    <div class="stats4" style="margin-bottom:34px" data-stats>
+      <div class="card stat rv"><div class="v" data-s="roots">–</div><div class="k">roots</div></div>
+      <div class="card stat rv" style="--rd:.05s"><div class="v" data-s="pairs">–</div><div class="k">pairs</div></div>
+      <div class="card stat rv" style="--rd:.1s"><div class="v" data-s="collected">–</div><div class="k">fees collected</div></div>
+      <div class="card stat rv" style="--rd:.15s"><div class="v" data-s="sent">–</div><div class="k">paid to builders</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="tabs" data-view><button data-t="roots" class="on">Roots</button><button data-t="pairs">Pairs</button></div>
+      <div class="tabs" data-sort></div>
+    </div>
+    <div data-list><div class="empty card">Loading…</div></div>
+  </div>
+</main>

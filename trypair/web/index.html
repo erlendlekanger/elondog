@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TryPair · Launch a coin. Get paid to pair it.</title>
+<meta name="description" content="A pump.fun launchpad where every coin paired against yours buys and locks your coin, and the people who build those pairs are paid from its creator fees.">
+<meta name="theme-color" content="#fafaf7">
+<meta property="og:title" content="TryPair · Launch a coin. Get paid to pair it.">
+<meta property="og:description" content="Every pair locks its root. Every root pays its pair builders.">
+<meta property="og:image" content="https://trypair.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main>
+  <div class="wrap wide">
+    <section class="hero">
+      <div>
+        <span class="eyebrow fade-in"><b>NEW</b> Pair-to-earn launchpad on pump.fun</span>
+        <h1 class="h-hero rise">Launch a coin.<br><em>Get paid</em> to pair it.</h1>
+        <p class="lede fade-in" style="--d:.45s;margin-top:26px">Every coin launched against a root buys that root and locks it. The root's creator fees go back to the people who built the pairs, every ten minutes, on chain.</p>
+        <div class="ctas fade-in" style="--d:.6s">
+          <a class="pill blue lg" href="/launch?type=pair">Build a pair <span class="arr">→</span></a>
+          <a class="pill lg" href="/launch?type=root">Launch a root</a>
+        </div>
+        <div class="mini fade-in" style="--d:.75s">
+          <div><div class="v" data-m="roots">–</div><div class="k">roots</div></div>
+          <div><div class="v" data-m="pairs">–</div><div class="k">pairs building</div></div>
+          <div><div class="v" data-m="paid">–</div><div class="k">paid to builders</div></div>
+        </div>
+      </div>
+      <div class="orbit fade-in" style="--d:.2s" data-orbit>
+        <svg viewBox="-300 -300 600 600" aria-hidden="true">
+          <defs>
+            <radialGradient id="halo"><stop offset="0" stop-color="#2e5bff" stop-opacity=".16"/><stop offset="1" stop-color="#2e5bff" stop-opacity="0"/></radialGradient>
+          </defs>
+          <circle class="halo" r="290"/>
+          <circle class="track" r="150"/><circle class="track" r="235"/>
+          <g data-spokes></g>
+          <g data-pkts></g>
+          <g data-nodes></g>
+          <g class="root node"><circle class="b" r="74"/><text y="2">$DOG</text><text class="s" y="24">ROOT</text></g>
+        </svg>
+        <div class="tag" style="left:0;top:4%"><span class="dim">DOG locked in pairs</span><b data-locked>38.4%</b></div>
+        <div class="tag" style="right:0;bottom:10%"><span class="dim">paid to SHIB's builder</span><b style="color:var(--good)" data-fee>+1.84 SOL</b></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="story" data-story>
+    <div class="wrap wide stage">
+      <div>
+        <div class="label" style="margin-bottom:22px">How a pair pushes its root</div>
+        <div class="ssteps">
+          <div class="st on"><div class="n">01 / 04</div><h3>Launch a root.</h3><p>$DOG goes live on pump.fun from your wallet. In the same transaction its creator fee split is locked on chain: most of it pays whoever builds pairs on it.</p></div>
+          <div class="st"><div class="n">02 / 04</div><h3>Someone pairs it.</h3><p>$SHIB launches with $DOG as its quote. It trades in $DOG, so every buy of $SHIB is a buy of $DOG first.</p></div>
+          <div class="st"><div class="n">03 / 04</div><h3>The root gets locked.</h3><p>Every $DOG inside $SHIB's curve or pool is $DOG off the market. More pairs, more locked, less to sell.</p></div>
+          <div class="st"><div class="n">04 / 04</div><h3>Builders get paid.</h3><p>Every ten minutes $DOG's fees are split between its pairs by how much $DOG each keeps locked, and for how long. Paid in SOL.</p></div>
+        </div>
+        <div class="prog"><i class="on"></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="board" data-board>
+        <svg viewBox="0 0 600 560" preserveAspectRatio="none" aria-hidden="true">
+          <defs><linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2e5bff" stop-opacity=".2"/><stop offset="1" stop-color="#2e5bff" stop-opacity="0"/></linearGradient></defs>
+          <g class="grid"><line x1="0" x2="600" y1="140" y2="140"/><line x1="0" x2="600" y1="260" y2="260"/><line x1="0" x2="600" y1="380" y2="380"/></g>
+          <path class="area" data-area d=""/>
+          <path class="px" data-px d=""/>
+        </svg>
+        <div class="hud"><div><div class="label">$DOG price</div><div class="pr" data-pr>0.0000041</div></div><div class="chg" data-chg>+0%</div></div>
+        <div class="chips"><span data-c="0"><i>S</i>$SHIB · DOG pair</span><span data-c="1"><i>B</i>$BONE · DOG pair</span><span data-c="2"><i>P</i>$PUP · DOG pair</span></div>
+        <div class="flow" data-flow>Fees this round → <b>SHIB 1.12 SOL</b> · <b>BONE 0.48 SOL</b> · <b>PUP 0.24 SOL</b></div>
+        <div class="lockbar"><div class="t"><span>$DOG locked in pairs</span><b data-lk>0%</b></div><div class="bar"><i data-lkb></i></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap wide">
+      <div class="sec-head">
+        <h2 class="h-sec" data-rise>The math is <em>public.</em></h2>
+        <p class="rv">Each round, a root's fee pot is split between its pairs. A pair's weight is the root it keeps locked, for every second it keeps it there, times a multiplier that rewards staying.</p>
+      </div>
+      <div class="formula">
+        <div class="card glow rv"><div class="label">Root locked</div><div class="big">40M DOG</div><p>in the pair's bonding curve, or its PumpSwap pool once it graduates</p></div>
+        <div class="op">×</div>
+        <div class="card glow rv" style="--rd:.08s"><div class="label">Time locked</div><div class="big">10 min</div><p>sampled every minute, so locking right before a round earns almost nothing</p></div>
+        <div class="op">×</div>
+        <div class="card glow rv" style="--rd:.16s"><div class="label">Lock multiplier</div><div class="big"><span data-mx>1.00</span>x</div><p>1x on day one, climbing to 3x for a pair that keeps its root locked</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:0">
+    <div class="wrap wide duo">
+      <div class="card dark glow rv">
+        <span class="label">If you build pairs</span>
+        <h3>Get paid twice for <em style="color:var(--accent2)">one</em> coin.</h3>
+        <p class="dim" style="margin:0 0 24px;font-size:16px">Your pair's own creator fee is yours, paid in the root. On top of it you are paid part of the root's fees, in SOL, for the root your pair locks.</p>
+        <ul><li>Pick any root, launch from your own wallet</li><li>Set your own creator fee, 0.01% to 3%</li><li>Pairs launched anywhere on pump.fun count too</li></ul>
+      </div>
+      <div class="card glow rv" style="--rd:.08s">
+        <span class="label">If you launch a root</span>
+        <h3>Every pair is <em>buy pressure</em> on your coin.</h3>
+        <p class="dim" style="margin:0 0 24px;font-size:16px">You decide how much of your coin's creator fees fund the pair builders: 50% to 100%. The rest goes straight to your wallet. The split is locked at launch.</p>
+        <ul><li>Each pair is a new market that buys your coin</li><li>Locked supply sits in curves and pools, not in wallets</li><li>Fee split locked on chain, admin revoked</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:0">
+    <div class="wrap wide">
+      <p class="offline-note">The payout desk is offline right now, so live numbers are not shown. Launching opens again when it is back.</p>
+      <div class="toolbar"><h2 class="h-sec" style="font-size:clamp(30px,3.6vw,46px)" data-rise>Roots on TryPair</h2><a class="pill" href="/explore">Explore all <span class="arr">→</span></a></div>
+      <div class="grid3" data-roots><div class="empty card" style="grid-column:1/-1">Loading roots…</div></div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:0">
+    <div class="wrap wide row2">
+      <div class="card pad rv">
+        <div class="toolbar" style="margin-bottom:6px"><b style="font-size:20px;letter-spacing:-.02em">Top pairs</b><span class="label">by root locked</span></div>
+        <div class="tscroll"><table class="tbl"><thead><tr><th>#</th><th>Pair</th><th class="r">Locked</th><th class="r hide-sm">Multiplier</th><th class="r">Earned</th></tr></thead><tbody data-toppairs><tr><td colspan="5" class="empty">Loading…</td></tr></tbody></table></div>
+      </div>
+      <div class="card pad rv" style="--rd:.08s">
+        <div class="toolbar" style="margin-bottom:6px"><b style="font-size:20px;letter-spacing:-.02em">Recent payouts</b><a class="label" href="/proof">Ledger →</a></div>
+        <div class="feed" data-feed><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:0">
+    <div class="wrap wide">
+      <div class="cta rv">
+        <h2>Pick a root.<br>Build a pair. <em>Get paid.</em></h2>
+        <p>It takes one signature. Your wallet pays pump.fun's costs and the first buy; TryPair charges nothing and never sees your keys.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill blue lg" href="/launch?type=pair">Build a pair <span class="arr">→</span></a><a class="pill lg" href="/how">How it works</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+<script src="/assets/home.js?v=1"></script>
+</body>
+</html>

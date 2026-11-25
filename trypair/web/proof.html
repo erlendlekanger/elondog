@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ledger · TryPair</title>
+<meta name="description" content="Every collection, split and payout the desk has made, each with its Solana transaction.">
+<meta name="theme-color" content="#fafaf7">
+<meta property="og:title" content="Ledger · TryPair">
+<meta property="og:description" content="Every collection, split and payout the desk has made, each with its Solana transaction.">
+<meta property="og:image" content="https://trypair.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main class="page">
+  <div class="wrap wide">
+    <section class="page-head">
+      <h1 class="h-page rise">Ledger</h1>
+      <p class="lede fade-in" style="--d:.3s">Every lamport that reached the payout wallet and every lamport that left it, with the Solana transaction for each. Nothing is kept: collected equals paid plus network fees plus what is waiting for the next round.</p>
+    </section>
+    <p class="offline-note">The payout desk is not reachable right now, so the ledger is not shown.</p>
+    <div class="stats4" style="margin-bottom:16px">
+      <div class="card stat rv"><div class="v" data-s="collected">–</div><div class="k">collected</div></div>
+      <div class="card stat rv" style="--rd:.05s"><div class="v" data-s="sent" style="color:var(--good)">–</div><div class="k">paid out</div></div>
+      <div class="card stat rv" style="--rd:.1s"><div class="v" data-s="fees">–</div><div class="k">Solana network fees</div></div>
+      <div class="card stat rv" style="--rd:.15s"><div class="v" data-s="waiting">–</div><div class="k">waiting for the next round</div></div>
+    </div>
+    <div class="card pad rv">
+      <div class="toolbar"><div class="tabs" data-kind><button data-k="" class="on">All</button><button data-k="pay">Payouts</button><button data-k="collect">Collections</button><button data-k="split">Splits</button><button data-k="pair">Pairs</button><button data-k="launch">Launches</button></div>
+        <div style="display:flex;gap:8px;align-items:center"><a class="pill" data-treasury target="_blank" rel="noopener">Payout wallet</a><a class="pill" href="/api/ledger.jsonl">Download</a></div></div>
+      <div class="tscroll"><table class="tbl"><thead><tr><th>When</th><th>What</th><th>Coin</th><th class="r">Amount</th><th class="r">Transaction</th></tr></thead><tbody data-rows><tr><td colspan="5" class="empty">Loading…</td></tr></tbody></table></div>
+    </div>
+  </div>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+<script src="/assets/proof.js?v=1"></script>
+</body>
+</html>

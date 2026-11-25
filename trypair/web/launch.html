@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Launch · TryPair</title>
+<meta name="description" content="Build a pair on a root, or launch a root whose creator fees pay its pair builders.">
+<meta name="theme-color" content="#fafaf7">
+<meta property="og:title" content="Launch on TryPair">
+<meta property="og:image" content="https://trypair.app/og.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main class="page">
+  <div class="wrap">
+    <section class="page-head">
+      <div>
+        <div class="tabs fade-in" data-tabs style="margin-bottom:22px"><button data-t="pair" class="on">Build a pair</button><button data-t="root">Launch a root</button></div>
+        <h1 class="h-page" data-title>Build a pair</h1>
+      </div>
+      <p class="lede fade-in" style="--d:.3s" data-lede>Launch a coin that trades against a root. Every buy of your coin buys the root first, and you are paid part of the root's creator fees for the root your coin keeps locked.</p>
+    </section>
+    <p class="offline-note">The payout desk is not reachable right now, so launching is paused. Try again in a minute.</p>
+    <div class="launch-grid">
+      <form class="card pad rv" data-form autocomplete="off" style="padding:26px">
+        <div class="field" data-rootfield><span>Root<em>the coin your pair trades against</em></span>
+          <input class="inp" data-rootq placeholder="Search roots, or paste a root's address" style="height:44px">
+          <div class="picker" data-picker><div class="dim" style="padding:12px;font-size:14px">Loading roots…</div></div>
+        </div>
+        <label class="drop"><div class="pv" data-pv><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5"/></svg></div>
+          <div><b>Coin image</b><span>PNG, JPG, GIF or WebP, up to 4 MB. Square works best.</span></div>
+          <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-file></label>
+        <div class="inrow">
+          <label class="field"><span>Name</span><input class="inp" data-v="name" maxlength="32" placeholder="Shiba Pair"></label>
+          <label class="field"><span>Ticker</span><input class="inp" data-v="tick" maxlength="11" placeholder="SHIB"></label>
+        </div>
+        <div class="field range" data-feefield><div class="top2"><span style="font-weight:600;font-size:14px">Your creator fee<em class="dim" style="font-family:var(--sans);font-style:normal;font-weight:400;margin-left:6px">paid to you in the root, on every trade</em></span><b data-feev>1%</b></div>
+          <input type="range" min="10" max="300" step="5" value="100" data-fee></div>
+        <div class="field range hidden" data-sharefield><div class="top2"><span style="font-weight:600;font-size:14px">To pair builders<em class="dim" style="font-family:var(--sans);font-style:normal;font-weight:400;margin-left:6px">the rest of the creator fees go to you</em></span><b data-sharev>80%</b></div>
+          <input type="range" min="50" max="100" step="5" value="80" data-share></div>
+        <label class="field"><span>Description<em>optional</em></span><textarea class="inp" data-v="desc" maxlength="500" placeholder="What the coin is about"></textarea></label>
+        <label class="field"><span>X<em>optional, a handle or a link</em></span><input class="inp" data-v="twitter" placeholder="@yourcoin"></label>
+        <label class="field" style="margin-bottom:8px"><span>First buy<em data-buyhint>optional, paid in SOL and swapped into the root first</em></span><input class="inp" data-v="buy" inputmode="decimal" placeholder="0"></label>
+        <div class="buyrow" data-buyrow><button type="button" class="chip" data-b="0">None</button><button type="button" class="chip" data-b="0.1">0.1 SOL</button><button type="button" class="chip" data-b="0.5">0.5 SOL</button><button type="button" class="chip" data-b="1">1 SOL</button><button type="button" class="chip" data-b="2">2 SOL</button></div>
+        <p class="msg" data-msg></p>
+        <button class="pill blue lg" data-launch style="width:100%;margin-top:22px">Connect wallet to launch</button>
+        <div class="steps hidden" data-steps></div>
+        <div data-done></div>
+      </form>
+      <aside class="sticky">
+        <div class="card dark pad rv" style="--rd:.08s">
+          <div class="label" data-sumlabel>What your pair earns</div>
+          <div style="display:flex;align-items:center;gap:16px;margin:18px 0 8px">
+            <span data-pr></span>
+            <div><div style="font-size:32px;font-weight:600;letter-spacing:-.04em"><span data-pm>1.00</span>x</div><div class="dim" style="font-size:13px" data-pd>a pair that just started locking</div></div>
+          </div>
+          <div class="kv" data-kv></div>
+        </div>
+        <p class="dim" style="font-size:13.5px;line-height:1.6;margin:14px 6px 0" data-fine>Your wallet signs the launch itself and pays pump.fun's costs: the new coin's accounts, the first buy if you set one and the network fee. TryPair never sees your keys and charges nothing.</p>
+      </aside>
+    </div>
+  </div>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+<script src="/assets/launch.js?v=1"></script>
+</body>
+</html>

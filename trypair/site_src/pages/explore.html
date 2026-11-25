@@ -1,0 +1,24 @@
+title: Explore · TryPair
+desc: Every root on TryPair and every pair building on them, with the root each one locks and what its builder has earned.
+scripts: /assets/explore.js
+---
+<main class="page">
+  <div class="wrap wide">
+    <section class="page-head">
+      <h1 class="h-page rise">Explore</h1>
+      <p class="lede fade-in" style="--d:.3s">Roots are the coins that pay. Pairs are the coins that trade against them and lock them. Pick one to see who is building on it and what they earn.</p>
+    </section>
+    <p class="offline-note">The payout desk is not reachable right now, so live numbers are not shown.</p>
+    <div class="stats4" style="margin-bottom:34px" data-stats>
+      <div class="card stat rv"><div class="v" data-s="roots">–</div><div class="k">roots</div></div>
+      <div class="card stat rv" style="--rd:.05s"><div class="v" data-s="pairs">–</div><div class="k">pairs</div></div>
+      <div class="card stat rv" style="--rd:.1s"><div class="v" data-s="collected">–</div><div class="k">fees collected</div></div>
+      <div class="card stat rv" style="--rd:.15s"><div class="v" data-s="sent">–</div><div class="k">paid to builders</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="tabs" data-view><button data-t="roots" class="on">Roots</button><button data-t="pairs">Pairs</button></div>
+      <div class="tabs" data-sort></div>
+    </div>
+    <div data-list><div class="empty card">Loading…</div></div>
+  </div>
+</main>

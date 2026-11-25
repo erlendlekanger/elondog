@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How it works · TryPair</title>
+<meta name="description" content="How TryPair pays pair builders: roots, pairs, root locked × time × lock multiplier, and a fee split locked on chain.">
+<meta name="theme-color" content="#fafaf7">
+<meta property="og:title" content="How it works · TryPair">
+<meta property="og:description" content="How TryPair pays pair builders: roots, pairs, root locked × time × lock multiplier, and a fee split locked on chain.">
+<meta property="og:image" content="https://trypair.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main class="page">
+  <div class="wrap narrow doc">
+    <section style="padding:30px 0 10px">
+      <h1 class="h-page rise">How TryPair works</h1>
+      <p class="lede fade-in" style="--d:.3s;margin-top:22px">Two kinds of coin, one rule: the coins that lock a root are paid by that root.</p>
+    </section>
+
+    <h2 class="rv">Roots</h2>
+    <p class="rv">A root is a coin launched on TryPair, paired with SOL, on pump.fun, from the launcher's own wallet. In the launch transaction its creator fee is moved into pump.fun's fee sharing with the payout wallet as the first shareholder, for 50% to 100% of the fees (the launcher picks), and the launcher as the second for the rest. Setting the shares revokes the admin: the split can never be changed, by anyone, and pump.fun shows it as shared fees.</p>
+
+    <h2 class="rv">Pairs</h2>
+    <p class="rv">A pair is any pump.fun coin whose quote asset is a root instead of SOL. pump.fun lets any coin be quoted in another pump.fun coin. A pair therefore trades in the root: buying the pair means buying the root first and paying it into the pair's bonding curve. Every root token in that curve, or in the pair's PumpSwap pool once it graduates, is off the market for as long as it stays there.</p>
+    <p class="rv">A pair's own creator fee (0.01% to 3%, the builder picks it) is paid in the root and goes to its builder, as on any pump.fun coin. TryPair never touches it.</p>
+
+    <h2 class="rv">What builders are paid</h2>
+    <p class="rv">Every ten minutes the payout desk collects each root's fees (pump.fun's permissionless <code>distribute_creator_fees</code>) and splits what reached the payout wallet between the root's pairs:</p>
+    <div class="math rv">weight(pair) = Σ over every look &nbsp; root locked × seconds since the last look × lock multiplier<br>lock multiplier = 1 + 2 × (1 − e<sup>−days locked / 3</sup>) &nbsp;&nbsp; 1x → 1.9x after a day → 2.7x after a week → 3x</div>
+    <p class="rv">The desk looks at every pair once a minute. Time is credited to what a pair locked at the previous look, so locking just before a round earns about a minute's worth. Less root locked shortens the pair's lock time by the part that left; none resets it. Pairs locking less than 0.1 SOL of root do not count. The pair's share of the pot is paid in SOL to its builder, the creator recorded in its bonding curve.</p>
+    <p class="rv">Pairs are found on chain, not only on this site: any pump.fun coin quoted in a root counts, wherever it was launched.</p>
+
+    <h2 class="rv">What it costs</h2>
+    <p class="rv">Nothing. The launcher's wallet pays pump.fun's own costs (the new accounts, the first buy, the network fee). The only cost the desk takes out of a root's pot is the Solana network fee of the transactions it makes for that root. Every collection, split and payout is in the <a href="/proof" style="color:var(--accent)">ledger</a>, with its transaction.</p>
+
+    <h2 class="rv">Questions</h2>
+    <div class="faq rv">
+      <details><summary>Can a root change its fee split later?</summary><p>No. The split is set in the launch transaction and the admin is revoked in the same instruction. Neither the launcher nor TryPair can change it.</p></details>
+      <details><summary>Why would anyone build a pair?</summary><p>A pair earns twice: its own creator fee on every trade, paid in the root, and a share of the root's fees for the root it locks. A root with active trading and few pairs is a big pot shared by few.</p></details>
+      <details><summary>What happens when a pair graduates?</summary><p>pump.fun moves its liquidity into a PumpSwap pool, still quoted in the root. The desk then counts the root in that pool.</p></details>
+      <details><summary>Does it work for pairs launched on pump.fun directly?</summary><p>Yes. The desk reads every bonding curve on chain whose quote is the root. The builder paid is the curve's creator.</p></details>
+      <details><summary>Who holds the payout wallet's key?</summary><p>The operator. The wallet only receives a root's builder share and pays it out each round; its balance and every transaction are public.</p></details>
+    </div>
+    <div class="cta rv" style="margin-top:70px;padding:48px"><h2 style="font-size:46px">Ready to <em>build?</em></h2><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill blue lg" href="/launch?type=pair">Build a pair <span class="arr">→</span></a><a class="pill lg" href="/launch?type=root">Launch a root</a></div></div>
+  </div>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+</body>
+</html>

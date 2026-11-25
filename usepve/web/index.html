@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PVE · The market is the boss. Every pair is a player.</title>
+<meta name="description" content="PVE is the co-op coin: build a pair against PVE, lock PVE, and get paid PVE's creator fees for every minute you keep it locked.">
+<meta name="theme-color" content="#08080c">
+<meta property="og:title" content="PVE · The market is the boss. Every pair is a player.">
+<meta property="og:description" content="Spawn a pair against PVE, lock PVE, collect the loot.">
+<meta property="og:image" content="https://usepve.xyz/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main>
+  <div class="wrap wide">
+    <section class="pve-hero">
+      <div>
+        <span class="eyebrow fade-in">◆ The co-op coin on pump.fun</span>
+        <h1 class="h-hero rise">The market is the boss.<br>Every pair is a <em>player.</em></h1>
+        <p class="lede fade-in" style="--d:.45s;margin-top:26px">Most coins are PvP: you win when someone else sells to you. PVE is co-op. Launch a coin paired against PVE and every buy of it buys PVE and locks it. PVE's creator fees are the loot, split between the players by how much PVE they keep locked, and for how long.</p>
+        <div class="ctas fade-in" style="--d:.6s">
+          <a class="pill blue lg" href="/launch">Spawn a pair <span class="arr">→</span></a>
+          <a class="pill lg" href="/how">How to play</a>
+        </div>
+      </div>
+      <div class="card boss hud-corners fade-in" style="--d:.25s" data-boss>
+        <div class="scan"></div>
+        <div class="bt"><span class="label">Boss · sell pressure</span><span class="badge" data-phase>LIVE</span></div>
+        <div class="nm" data-bossname>The Market</div>
+        <div class="lv" data-bosslv>PVE supply on the market</div>
+        <div class="hp"><i class="ghost" data-hpg></i><i data-hp></i><b data-hpt>HP 100.0%</b></div>
+        <div class="hpk"><span data-lockedk>PVE locked by players</span><b style="color:var(--accent2)" data-locked>0.0%</b></div>
+        <div class="party" data-party></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="sec" data-vs>
+    <div class="wrap wide">
+      <div class="sec-head"><h2 class="h-sec" data-rise>PvP coins eat <em>their own.</em></h2><p class="rv">On a normal coin every winner needs a loser. On PVE, every player is on the same side: each pair locks more PVE, and PVE pays every pair for it.</p></div>
+      <div class="vs">
+        <div class="card pvp rv" data-pvp><span class="label">Every other coin</span><h3>PvP</h3><p class="dim" style="font-size:16px;margin:0 0 24px">You profit when someone else is late. Holders compete, fees go to one wallet, the chart is a fight.</p>
+          <ul><li>Creator fees to one wallet</li><li>Your gain is someone's exit</li><li>Nothing is locked</li></ul></div>
+        <div class="mid">VS</div>
+        <div class="card pve dark rv hud-corners" style="--rd:.1s" data-pvecard><span class="label">PVE</span><h3>Co-op</h3><p class="dim" style="font-size:16px;margin:0 0 24px">Every pair is a new market that buys PVE. Every PVE in a pair is off the market. Every player is paid by the same boss.</p>
+          <ul><li>Creator fees paid to the players, every 10 minutes</li><li>Each pair is buy pressure on PVE</li><li>Fee split locked on chain, admin revoked</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="levels" data-levels>
+    <div class="wrap wide" style="padding-bottom:34px"><h2 class="h-sec" data-rise>How to <em>play.</em></h2></div>
+    <div class="track" data-track>
+      <div class="card lvl hud-corners"><span class="n">LEVEL 01</span><h3>Spawn a pair</h3><p>Launch a coin on pump.fun with PVE as its quote, from your own wallet. Pick its name, its picture and its own creator fee, paid to you in PVE.</p>
+        <div class="art"><svg viewBox="0 0 300 120" width="90%"><circle cx="90" cy="60" r="34" fill="none" stroke="#ededf2" stroke-width="2"/><text x="90" y="65" fill="#ededf2" font-family="JetBrains Mono" font-size="13" text-anchor="middle">$RAID</text><path d="M130 60h40" stroke="#ff4d2e" stroke-width="2" stroke-dasharray="4 5"/><circle cx="210" cy="60" r="34" fill="#ff4d2e"/><text x="210" y="65" fill="#fff" font-family="JetBrains Mono" font-size="13" font-weight="700" text-anchor="middle">PVE</text></svg></div></div>
+      <div class="card lvl hud-corners"><span class="n">LEVEL 02</span><h3>Lock PVE</h3><p>Your coin trades in PVE. Every buy of it buys PVE first and puts it in your curve, then in your PumpSwap pool. That PVE is off the market for as long as it stays.</p>
+        <div class="art" style="padding:0 26px;display:grid;align-content:center;justify-items:stretch;gap:10px"><div class="hpk" style="display:flex;justify-content:space-between;font-size:13px;color:var(--dim)"><span>PVE locked in $RAID</span><b style="color:var(--accent2)" data-xpt>0%</b></div><div class="xp"><i data-xp></i></div></div></div>
+      <div class="card lvl hud-corners"><span class="n">LEVEL 03</span><h3>Collect the loot</h3><p>Every ten minutes PVE's creator fees drop. Each player gets a cut by PVE locked × time locked × a multiplier that climbs from 1x to 3x while the PVE stays.</p>
+        <div class="art"><div style="text-align:center"><div style="font-family:var(--mono);font-size:12px;color:var(--dim)">LOOT THIS ROUND</div><div style="font-size:46px;font-weight:700;color:var(--good);letter-spacing:-.03em" data-loot>+0.00 SOL</div></div></div></div>
+      <div class="card lvl dark hud-corners"><span class="n">THE RULE</span><h3>Lock more, <em>longer.</em></h3><p>weight = PVE locked × seconds locked × multiplier. The desk looks once a minute, so locking right before a drop earns about a minute's worth. Pairs launched anywhere on pump.fun count.</p>
+        <div class="art"><div style="text-align:center"><div style="font-size:64px;font-weight:700;letter-spacing:-.04em"><span data-mx>1.00</span>x</div><div style="font-family:var(--mono);font-size:12px;color:var(--dim)">LOCK MULTIPLIER</div></div></div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap wide">
+      <p class="offline-note">The payout desk is offline right now, so live numbers are not shown.</p>
+      <div class="row2">
+        <div class="card pad rv">
+          <div class="toolbar" style="margin-bottom:6px"><b style="font-size:20px;text-transform:uppercase">Raid board</b><a class="label" href="/explore">All players →</a></div>
+          <div class="tscroll"><table class="tbl"><thead><tr><th>#</th><th>Player</th><th class="r">PVE locked</th><th class="r hide-sm">Multiplier</th><th class="r">Loot</th></tr></thead><tbody data-board><tr><td colspan="5" class="empty">Loading…</td></tr></tbody></table></div>
+        </div>
+        <div class="card pad rv" style="--rd:.08s">
+          <div class="toolbar" style="margin-bottom:6px"><b style="font-size:20px;text-transform:uppercase">Loot drops</b><a class="label" href="/proof">Ledger →</a></div>
+          <div class="feed" data-feed><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-top:0">
+    <div class="wrap wide">
+      <div class="cta rv">
+        <h2>Pick up a controller.<br><em>Spawn a pair.</em></h2>
+        <p>One signature. Your wallet pays pump.fun's costs and the first buy; PVE takes nothing and never sees your keys.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill blue lg" href="/launch">Spawn a pair <span class="arr">→</span></a><a class="pill lg" href="/r">See PVE</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+<script src="/assets/home.js?v=1"></script>
+</body>
+</html>

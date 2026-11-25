@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How to play · PVE</title>
+<meta name="description" content="The rules of PVE: spawn a pair against PVE, lock PVE, and collect PVE's creator fees by PVE locked × time × multiplier.">
+<meta name="theme-color" content="#08080c">
+<meta property="og:title" content="How to play · PVE">
+<meta property="og:description" content="The rules of PVE: spawn a pair against PVE, lock PVE, and collect PVE's creator fees by PVE locked × time × multiplier.">
+<meta property="og:image" content="https://usepve.xyz/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main class="page">
+  <div class="wrap narrow doc">
+    <section style="padding:30px 0 10px">
+      <h1 class="h-page rise">How to play</h1>
+      <p class="lede fade-in" style="--d:.3s;margin-top:22px">One boss coin, any number of players, one rule: the players who lock PVE are paid by PVE.</p>
+    </section>
+
+    <h2 class="rv">The boss coin</h2>
+    <p class="rv">PVE is a pump.fun coin paired with SOL. At genesis its creator fee was moved into pump.fun's fee sharing with the payout wallet as its shareholder, and the admin was revoked in the same instruction: the split can never be changed. Every creator fee PVE earns is loot for the players.</p>
+
+    <h2 class="rv">Players</h2>
+    <p class="rv">A player is any pump.fun coin whose quote asset is PVE instead of SOL. It trades in PVE, so buying it means buying PVE first and paying that PVE into its bonding curve, and later into its PumpSwap pool. That PVE is off the market for as long as it stays. Spawn one on the <a href="/launch" style="color:var(--accent)">launch page</a>, or on pump.fun directly: the desk finds every coin quoted in PVE on chain.</p>
+    <p class="rv">A player's own creator fee (0.01% to 3%, picked at launch) is paid in PVE to its builder, as on any pump.fun coin. PVE never touches it.</p>
+
+    <h2 class="rv">The loot</h2>
+    <p class="rv">Every ten minutes the payout desk collects PVE's fees and splits what arrived between the players:</p>
+    <div class="math rv">weight(player) = Σ over every look &nbsp; PVE locked × seconds since the last look × lock multiplier<br>lock multiplier = 1 + 2 × (1 − e<sup>−days locked / 3</sup>) &nbsp;&nbsp; 1x → 1.9x after a day → 2.7x after a week → 3x</div>
+    <p class="rv">The desk looks at every player once a minute and credits the time to what it locked at the previous look, so locking right before a drop earns about a minute's worth. Less PVE locked shortens the lock time by the part that left; none resets it. Players locking less than 0.1 SOL of PVE do not count. Each player's cut is paid in SOL to its builder.</p>
+
+    <h2 class="rv">What it costs</h2>
+    <p class="rv">Nothing. Your wallet pays pump.fun's own costs when you spawn a pair. The only cost taken from the loot is the Solana network fee of the desk's own transactions. Every drop, split and payout is in the <a href="/proof" style="color:var(--accent)">ledger</a> with its transaction.</p>
+
+    <h2 class="rv">Questions</h2>
+    <div class="faq rv">
+      <details><summary>Why is it called PVE?</summary><p>In a PvP game players win by beating each other. In a PvE game they team up against the environment. On PVE the players are not each other's exit: every pair adds buy pressure and locked supply to the same coin, and the same coin pays all of them.</p></details>
+      <details><summary>Can the fee split change?</summary><p>No. It was locked at genesis and the admin revoked in the same transaction.</p></details>
+      <details><summary>Do I have to launch on this site?</summary><p>No. Any pump.fun coin quoted in PVE counts. The builder paid is the creator in its bonding curve.</p></details>
+      <details><summary>What happens when my pair graduates?</summary><p>Its liquidity moves to a PumpSwap pool, still quoted in PVE. The desk then counts the PVE in that pool.</p></details>
+    </div>
+    <div class="cta rv" style="margin-top:70px;padding:48px"><h2 style="font-size:46px">Ready? <em>Spawn.</em></h2><div style="display:flex;gap:10px;flex-wrap:wrap"><a class="pill blue lg" href="/launch">Spawn a pair <span class="arr">→</span></a><a class="pill lg" href="/explore">Raid board</a></div></div>
+  </div>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Launch a coin · Hold</title>
+<meta name="description" content="Launch a coin on pump.fun, paired with SOL or a stock, whose creator fees are paid to its holders, weighted by how long they hold.">
+<meta name="theme-color" content="#000000">
+<meta property="og:title" content="Launch a coin · Hold">
+<meta property="og:description" content="Launch a coin on pump.fun, paired with SOL or a stock, whose creator fees are paid to its holders, weighted by how long they hold.">
+<meta property="og:image" content="https://usehold.fun/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Inter+Tight:wght@500..800&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main class="page">
+  <div class="wrap">
+    <section class="page-head">
+      <h1 class="h-page rise">Launch a coin</h1>
+      <p class="lede fade-in" style="--d:.3s">The coin goes live on pump.fun from your own wallet. Its creator fee split is locked to Hold's payout wallet in the same transaction, and every fee is paid on to the holders, in SOL or in the stock you pair it with.</p>
+    </section>
+    <p class="offline-note">The payout desk is not reachable right now, so launching is paused. Try again in a minute.</p>
+    <div class="launch-grid">
+      <form class="card pad rv" data-form autocomplete="off" style="padding:26px">
+        <label class="drop"><div class="pv" data-pv><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5"/></svg></div>
+          <div><b>Coin image</b><span>PNG, JPG, GIF or WebP, up to 4 MB. Square works best.</span></div>
+          <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" data-file></label>
+        <div class="inrow">
+          <label class="field"><span>Name</span><input class="inp" data-v="name" maxlength="32" placeholder="Hold Longer"></label>
+          <label class="field"><span>Ticker</span><input class="inp" data-v="tick" maxlength="11" placeholder="HOLD"></label>
+        </div>
+        <div class="field"><span>Pair<em>holders are paid in what the coin is paired with</em></span>
+          <div class="pairs" data-pairs><button type="button" class="pr on" data-m="So11111111111111111111111111111111111111112"><i>◎</i><b>SOL</b></button></div>
+          <div class="pairnote" data-pairnote>Paired with SOL. Holders are paid in SOL.</div></div>
+        <label class="field"><span>Description<em>optional</em></span><textarea class="inp" data-v="desc" maxlength="500" placeholder="What the coin is about"></textarea></label>
+        <label class="field"><span>X<em>optional, a handle or a link</em></span><input class="inp" data-v="twitter" placeholder="@yourcoin"></label>
+        <label class="field" style="margin-bottom:8px"><span>First buy<em>optional, paid in SOL from your wallet, swapped into the pair</em></span><input class="inp" data-v="buy" inputmode="decimal" placeholder="0"></label>
+        <div class="buyrow" data-buyrow><button type="button" class="chip" data-b="0">None</button><button type="button" class="chip" data-b="0.1">0.1 SOL</button><button type="button" class="chip" data-b="0.5">0.5 SOL</button><button type="button" class="chip" data-b="1">1 SOL</button><button type="button" class="chip" data-b="2">2 SOL</button></div>
+        <p class="msg" data-msg></p>
+        <button class="pill blue lg" data-launch style="width:100%;margin-top:22px">Connect wallet to launch</button>
+        <div class="steps hidden" data-steps></div>
+        <div data-done></div>
+      </form>
+      <aside class="sticky">
+        <div class="card dark pad rv" style="--rd:.08s">
+          <div class="label">How this coin pays</div>
+          <div style="display:flex;align-items:center;gap:16px;margin:18px 0 8px"><span data-pr></span>
+            <div><div style="font-family:var(--serif);font-size:34px;font-weight:700;letter-spacing:-.04em"><span data-pm>1.00</span>x</div><div class="dim" style="font-size:13px" data-pd>a wallet that just bought</div></div></div>
+          <div class="kv" style="margin-top:8px">
+            <div><span>Creator fees to holders</span><span>100%</span></div>
+            <div><span>Kept by Hold</span><span>0%</span></div>
+            <div><span>Paired with</span><span data-pv2>SOL</span></div>
+            <div><span>Paid</span><span data-iv>in SOL every 6 min</span></div>
+            <div><span>Who counts</span><span data-mh>0.1% of the supply or more</span></div>
+            <div><span>Hold multiplier</span><span>1x to 10x over a month</span></div>
+            <div><span>Fee split</span><span>locked at launch</span></div>
+            <div><span>Payout wallet</span><a class="mono" data-treasury target="_blank" rel="noopener" style="font-size:13px">–</a></div>
+          </div>
+        </div>
+        <p class="dim" style="font-size:13.5px;line-height:1.6;margin:14px 6px 0">Your wallet signs the launch itself and pays pump.fun's costs: the new coin's accounts, the first buy if you set one and the network fee. Hold never sees your keys and charges nothing.</p>
+      </aside>
+    </div>
+  </div>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+<script src="/assets/launch.js?v=1"></script>
+</body>
+</html>

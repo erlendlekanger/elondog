@@ -1,0 +1,21 @@
+title: Your rewards · Hold
+desc: Your coins on Hold: how long you have held, your multiplier, your share of the next payout and what you have been paid.
+scripts: /assets/me.js
+---
+<main class="page">
+  <div class="wrap">
+    <section class="page-head">
+      <h1 class="h-page rise">Your rewards</h1>
+      <p class="lede fade-in" style="--d:.3s">Every coin on Hold you hold, how long you have held it, your multiplier, your share of its next payout and everything already paid to you.</p>
+    </section>
+    <p class="offline-note">The payout desk is not reachable right now, so your numbers are not shown.</p>
+    <div class="toolbar"><input class="inp" data-addr placeholder="Paste a wallet address, or connect yours" style="max-width:520px;height:46px"><button class="pill solid" data-go>Look up</button></div>
+    <div class="stats4" style="margin:18px 0 16px">
+      <div class="card stat"><div class="v" data-s="coins">–</div><div class="k">coins held</div></div>
+      <div class="card stat"><div class="v" data-s="mult">–</div><div class="k">best multiplier</div></div>
+      <div class="card stat"><div class="v" data-s="owed">–</div><div class="k">waiting to be sent</div></div>
+      <div class="card stat"><div class="v grad" data-s="paid">–</div><div class="k">paid to you</div></div>
+    </div>
+    <div data-list><div class="empty card">Connect your wallet or paste an address to see your rewards.</div></div>
+  </div>
+</main>

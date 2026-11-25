@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Root · PVE</title>
+<meta name="description" content="PVE: the players building on it, the PVE they keep locked, and the loot each one is paid.">
+<meta name="theme-color" content="#08080c">
+<meta property="og:title" content="Root · PVE">
+<meta property="og:description" content="PVE: the players building on it, the PVE they keep locked, and the loot each one is paid.">
+<meta property="og:image" content="https://usepve.xyz/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main class="page">
+  <div class="wrap wide">
+    <p class="offline-note">The payout desk is not reachable right now, so live numbers are not shown.</p>
+    <section class="coinhead" data-head>
+      <span class="av xl"></span>
+      <div><h1 data-name>Loading…</h1><div class="sub" data-sub></div></div>
+      <div class="acts" data-acts></div>
+    </section>
+    <div class="stats4" style="margin-bottom:16px">
+      <div class="card stat rv"><div class="v" data-s="mcap">–</div><div class="k">market cap</div></div>
+      <div class="card stat rv" style="--rd:.05s"><div class="v" data-s="locked">–</div><div class="k" data-s="lockedk">of the supply locked in pairs</div></div>
+      <div class="card stat rv" style="--rd:.1s"><div class="v" data-s="pairs">–</div><div class="k" data-s="pairsk">pairs building</div></div>
+      <div class="card stat rv" style="--rd:.15s"><div class="v" data-s="sent">–</div><div class="k">loot paid to players</div></div>
+    </div>
+    <div class="row2" style="margin-bottom:16px">
+      <div class="card pad rv">
+        <div class="toolbar" style="margin-bottom:4px"><b style="font-size:20px;letter-spacing:-.02em" data-pairstitle>Pairs</b><span class="label" data-next>next payout –</span></div>
+        <div class="tscroll"><table class="tbl"><thead><tr><th>#</th><th>Pair</th><th class="r">Locked</th><th class="r hide-sm">Multiplier</th><th class="r">Share now</th><th class="r">Earned</th></tr></thead><tbody data-pairs><tr><td colspan="6" class="empty">Loading…</td></tr></tbody></table></div>
+      </div>
+      <div style="display:grid;gap:16px">
+        <div class="card dark pad rv" style="--rd:.08s">
+          <div class="label">Where the creator fees go</div>
+          <div style="font-size:44px;font-weight:600;letter-spacing:-.04em;margin:14px 0 4px" data-bps>–</div>
+          <div class="dim" style="font-size:14px;margin-bottom:16px" data-bpsk>to the pair builders</div>
+          <div class="splitbar" style="background:rgba(255,255,255,.12)"><i data-bpsb style="width:0"></i></div>
+          <div class="kv" style="margin-top:12px" data-kv></div>
+        </div>
+        <a class="card pad rv glow" style="--rd:.12s;display:block" data-pairit>
+          <div class="label">Join the raid</div>
+          <div style="font-size:26px;font-weight:600;letter-spacing:-.03em;margin:10px 0 6px" data-pairitt>Spawn a pair →</div>
+          <div class="dim" style="font-size:14px">Launch a coin that trades against PVE. You keep your coin's own creator fee and earn a cut of PVE's fees for the PVE you lock.</div>
+        </a>
+      </div>
+    </div>
+    <div class="card pad rv">
+      <div class="toolbar" style="margin-bottom:4px"><b style="font-size:20px;letter-spacing:-.02em">Activity</b><a class="label" href="/proof">Full ledger →</a></div>
+      <div class="feed" data-feed><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+<script src="/assets/root.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pair · TryPair</title>
+<meta name="description" content="A pair on TryPair: the root it trades against, the root it keeps locked, and what its builder is paid.">
+<meta name="theme-color" content="#fafaf7">
+<meta property="og:title" content="Pair · TryPair">
+<meta property="og:description" content="A pair on TryPair: the root it trades against, the root it keeps locked, and what its builder is paid.">
+<meta property="og:image" content="https://trypair.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400..600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css?v=1">
+</head>
+<body>
+<main class="page">
+  <div class="wrap wide">
+    <p class="offline-note">The payout desk is not reachable right now, so live numbers are not shown.</p>
+    <section class="coinhead" data-head>
+      <span class="av xl"></span>
+      <div><h1 data-name>Loading…</h1><div class="sub" data-sub></div></div>
+      <div class="acts" data-acts></div>
+    </section>
+    <div class="stats4" style="margin-bottom:16px">
+      <div class="card stat rv"><div class="v" data-s="locked">–</div><div class="k" data-s="lockedk">root locked</div></div>
+      <div class="card stat rv" style="--rd:.05s"><div class="v" data-s="share">–</div><div class="k">share of the next payout</div></div>
+      <div class="card stat rv" style="--rd:.1s"><div class="v" data-s="mult">–</div><div class="k">lock multiplier</div></div>
+      <div class="card stat rv" style="--rd:.15s"><div class="v" data-s="earned" style="color:var(--good)">–</div><div class="k">earned by its builder</div></div>
+    </div>
+    <div class="row2">
+      <div class="card pad rv">
+        <div class="label" style="margin-bottom:6px">About this pair</div>
+        <p data-desc style="font-size:17px;color:var(--ink2);margin:8px 0 18px"></p>
+        <div class="kv" data-kv></div>
+      </div>
+      <div style="display:grid;gap:16px">
+        <a class="card dark pad rv glow" style="--rd:.08s;display:block" data-rootcard>
+          <div class="label">Trades against</div>
+          <div style="display:flex;align-items:center;gap:14px;margin-top:14px" data-root></div>
+        </a>
+        <div class="card pad rv" style="--rd:.12s">
+          <div class="label">Activity</div>
+          <div class="feed" data-feed style="margin-top:6px"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="/vendor/lenis.min.js"></script>
+<script src="/assets/site.js?v=1"></script>
+<script src="/assets/core.js?v=1"></script>
+<script src="/assets/pair.js?v=1"></script>
+</body>
+</html>

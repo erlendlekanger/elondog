@@ -1,0 +1,21 @@
+title: Your loot · PVE
+desc: Your pairs, the PVE they lock, your cut of the next drop and all the loot loot paid to you.
+scripts: /assets/me.js
+---
+<main class="page">
+  <div class="wrap">
+    <section class="page-head">
+      <h1 class="h-page rise" data-title>Your loot</h1>
+      <p class="lede fade-in" style="--d:.3s">Every pair you spawned, the PVE it keeps locked, your cut of the next loot drop and everything already loot paid to your wallet.</p>
+    </section>
+    <p class="offline-note">The payout desk is not reachable right now, so your numbers are not shown.</p>
+    <div class="toolbar"><input class="inp" data-addr placeholder="Paste a wallet address, or connect yours" style="max-width:520px;height:46px"><button class="pill solid" data-go>Look up</button></div>
+    <div class="stats4" style="margin:18px 0 16px">
+      <div class="card stat"><div class="v" data-s="pairs">–</div><div class="k">pairs spawned</div></div>
+      <div class="card stat"><div class="v" data-s="share">–</div><div class="k">combined share now</div></div>
+      <div class="card stat"><div class="v" data-s="owed">–</div><div class="k">waiting to be sent</div></div>
+      <div class="card stat"><div class="v" data-s="paid" style="color:var(--good)">–</div><div class="k">loot paid to you</div></div>
+    </div>
+    <div data-list><div class="empty card">Connect your wallet or paste an address to see your pairs.</div></div>
+  </div>
+</main>

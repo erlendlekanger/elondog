@@ -3,8 +3,8 @@ Run it after run.ps1 has started (the address is read from engine_run.log), and 
 
     py usehold/tools/deploy.py              (add --no-engine to deploy only the static pages)
 
-The first deploy links the Vercel project "usehold". Vercel's CLI links new projects to the git repository it finds;
-right after the first deploy run `npx vercel git disconnect --yes` in usehold/.
+.vercel/project.json links this folder to the Vercel project "usehold", so the CLI never connects it to git
+(a git-connected project would redeploy without the tunnel address on every push).
 """
 import os
 import re

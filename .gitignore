@@ -4,4 +4,5 @@ engine_run.log
 __pycache__/
 *.pyc
 .env*
-.vercel/
+.vercel/*
+!.vercel/project.json

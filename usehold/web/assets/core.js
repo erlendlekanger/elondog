@@ -36,7 +36,7 @@
   };
   const solscan = (kind, v) => `https://solscan.io/${kind}/${v}`;
   const OFFLINE = 'The payout desk is not reachable right now. Try again in a minute.';
-  const api = async url => { try { const r = await fetch(url, {credentials: 'same-origin'}); return await r.json(); } catch (e) { return {ok: false, offline: true, error: OFFLINE}; } };
+  const api = async url => { try { const r = await fetch(url, {credentials: 'same-origin'}); if (r.status === 503) return {ok: false, offline: true, error: OFFLINE}; return await r.json(); } catch (e) { return {ok: false, offline: true, error: OFFLINE}; } };
   const post = async (url, body) => {
     let r;
     try { r = await fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body || {})}); }
